@@ -1,4 +1,4 @@
-const Probel = require("./probel");
+const Probel = require("./../index");
 
 const port = 8910;
 const host = "172.24.51.74";

@@ -20,8 +20,8 @@
   "homepage": "https://github.com/ryanmccartney/probel-swp-08#readme",
   "main": "index.js",
   "scripts": {
-    "example-interogate": "nodemon ./example-interogate.js",
-    "example-labels": "nodemon ./example-labels.js"
+    "example-interogate": "nodemon ./examples/example-interogate",
+    "example-labels": "nodemon ./examples/example-labels"
   },
   "author": "Ryan McCartney",
   "license": "MIT",

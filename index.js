@@ -73,6 +73,7 @@ const isAck = (response) => {
 
 module.exports = class Probel {
     constructor(host, port, sources = 0, destinations = 0, levels = 0) {
+        this.debug = false;
         this.extended = false;
         this.host = host;
         this.port = port;
@@ -92,6 +93,12 @@ module.exports = class Probel {
         }
     }
 
+    log = (message) => {
+        if (this.debug) {
+            console.log(message);
+        }
+    };
+
     connect = () => {
         this.client = new Net.Socket();
 
@@ -107,15 +114,18 @@ module.exports = class Probel {
     };
 
     send = (message) => {
-        console.log(message);
+        // Log bytes sent to router when in debug mode
+        this.log(`Tx (${message.length}): ${message.toString("hex")}`);
         this.client.write(message);
     };
 
-    handleData = (chunk) => {
-        console.log(chunk);
-        if (isAck(chunk)) {
+    handleData = (reply) => {
+        // Log bytes recieved from the router when in debug mode
+        this.log(`Rx (${reply.length}): ${reply.toString("hex")}`);
+
+        if (isAck(reply)) {
         } else {
-            const slice = chunk.slice(2, Buffer.byteLength(chunk) - 2);
+            const slice = chunk.slice(2, Buffer.byteLength(reply) - 2);
             this.processData(slice);
         }
         this.send(ackMessage());
@@ -196,7 +206,6 @@ module.exports = class Probel {
             case 108:
             case 236:
                 //Handle Source Names UMD Response (16 chars per name)
-                console.log("UMD LABEL DATA");
                 this.umdLabels = { ...this.umdLabels, ...this.parseNames(dataBytes) };
                 break;
             case 107:
@@ -255,7 +264,6 @@ module.exports = class Probel {
 
     getState = () => {
         for (let level = 0; level < this.levels; level++) {
-            console.log(level);
             const buffer = tallyStateRequest(level);
             this.send(buffer);
         }
