@@ -9,6 +9,9 @@ const levelTotal = 16;
 
 const probel = new Probel(host, port, sourceTotal, destinationTotal, levelTotal);
 
+//Turn on debug mode so we can see what's being sent and received in bytes
+probel.debug = true;
+
 //Get source labels (8 chars long) and return them in an object
 const sourceNames = probel.getSourceNames();
 console.log(sourceNames);
