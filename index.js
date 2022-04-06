@@ -32,7 +32,7 @@ const crosspointMessage = (levelNumber, sourceNumber, destinationNumber) => {
 };
 
 const crosspointMessageExtended = (levelNumber, sourceNumber, destinationNumber) => {
-    const commandNumber = 130;
+    const commandNumber = 66;
 
     const levelByte = Buffer.alloc(1);
     levelByte.writeUInt8(levelNumber, 0);
@@ -266,7 +266,7 @@ module.exports = class Probel {
 
     //Route all the levels from a given source to a given destination (1 to 17)
     routeAllLevels = (srcNumber, destNumber) => {
-        for (let level = 0; level <= this.levels; level++) {
+        for (let level = 0; level < this.levels; level++) {
             this.route(level, srcNumber, destNumber);
         }
     };
