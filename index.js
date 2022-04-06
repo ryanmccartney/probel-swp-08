@@ -31,6 +31,26 @@ const crosspointMessage = (levelNumber, sourceNumber, destinationNumber) => {
     return message(commandNumber, data);
 };
 
+const crosspointMessageExtended = (levelNumber, sourceNumber, destinationNumber) => {
+    const commandNumber = 130;
+
+    const levelByte = Buffer.alloc(1);
+    levelByte.writeUInt8(levelNumber, 0);
+
+    const matrixByte = Buffer.alloc(1);
+    matrixByte.writeUInt8(0, 0);
+
+    const destNumberMod = mod(destinationNumber, 256);
+    const srcNumberMod = mod(sourceNumber, 256);
+
+    const destNumberDiv = div(destinationNumber, 256);
+    const srcNumberDiv = div(sourceNumber, 256);
+
+    const array = [matrixByte, levelByte, destNumberDiv, destNumberMod, srcNumberDiv, srcNumberMod];
+    const data = Buffer.concat(array);
+    return message(commandNumber, data);
+};
+
 const sourceNamesRequest = () => {
     let commandNumber = 100;
     if (this.extended) {
@@ -79,7 +99,7 @@ module.exports = class Probel {
         this.port = port;
         this.sources = sources;
         this.destinations = destinations;
-        this.levels = 15; //levels;
+        this.levels = levels;
         this.client;
         this.tallies = {};
         this.sourceNames = {};
@@ -235,7 +255,12 @@ module.exports = class Probel {
 
     //Route a source to a destination at a specified level only (1 to 17)
     route = (levelNumber, srcNumber, destNumber) => {
-        const buffer = crosspointMessage(levelNumber, srcNumber, destNumber);
+        let buffer;
+        if (this.extended) {
+            buffer = crosspointMessageExtended(levelNumber, srcNumber, destNumber);
+        } else {
+            buffer = crosspointMessage(levelNumber, srcNumber, destNumber);
+        }
         this.send(buffer);
     };
 

@@ -4,9 +4,9 @@
 //DATE: 07/03/2022
 
 module.exports = (x, y) => {
-    const xInt = parseInt(x);
-    const yInt = parseInt(y);
-    const zInt = parseInt(xInt / yInt);
+    const xInt = Math.floor(x);
+    const yInt = Math.floor(y);
+    const zInt = Math.floor(xInt / yInt);
     const buffer = Buffer.alloc(1);
     buffer.writeUInt8(zInt, 0);
     return buffer;
