@@ -26,7 +26,7 @@ const crosspointMessage = (levelNumber, sourceNumber, destinationNumber) => {
     const destNumber = mod(destinationNumber, 128);
     const srcNumber = mod(sourceNumber, 128);
 
-    const array = [matrixLevelByte.encode(0, 0), multiplierNumber, destNumber, srcNumber];
+    const array = [matrixLevelByte.encode(0, levelNumber), multiplierNumber, destNumber, srcNumber];
     const data = Buffer.concat(array);
     return message(commandNumber, data);
 };
@@ -79,7 +79,7 @@ module.exports = class Probel {
         this.port = port;
         this.sources = sources;
         this.destinations = destinations;
-        this.levels = levels;
+        this.levels = 15; //levels;
         this.client;
         this.tallies = {};
         this.sourceNames = {};
@@ -125,7 +125,7 @@ module.exports = class Probel {
 
         if (isAck(reply)) {
         } else {
-            const slice = chunk.slice(2, Buffer.byteLength(reply) - 2);
+            const slice = reply.slice(2, Buffer.byteLength(reply) - 2);
             this.processData(slice);
         }
         this.send(ackMessage());
@@ -241,9 +241,8 @@ module.exports = class Probel {
 
     //Route all the levels from a given source to a given destination (1 to 17)
     routeAllLevels = (srcNumber, destNumber) => {
-        for (let level = 0; i <= 16; i++) {
-            const buffer = crosspointMessage(levelNumber, srcNumber, destNumber);
-            this.send(buffer);
+        for (let level = 0; level <= this.levels; level++) {
+            this.route(level, srcNumber, destNumber);
         }
     };
 

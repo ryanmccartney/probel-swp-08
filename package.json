@@ -21,7 +21,8 @@
   "main": "index.js",
   "scripts": {
     "example-interogate": "nodemon ./examples/example-interogate.js",
-    "example-labels": "nodemon ./examples/example-labels.js"
+    "example-labels": "nodemon ./examples/example-labels.js",
+    "example-route": "nodemon ./examples/example-route.js"
   },
   "author": "Ryan McCartney",
   "license": "MIT",
