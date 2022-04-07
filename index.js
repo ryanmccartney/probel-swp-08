@@ -158,19 +158,21 @@ module.exports = class Probel {
         const nameCount = data[4];
 
         const names = {};
-        let nameBytes = data.slice(5, Buffer.byteLength(data));
 
-        if (startIndex !== 0) {
-            data.slice(6, Buffer.byteLength(data));
+        //Some unexplained changing of bit positions based on the number of labels in  a message
+        let startPosition = 6;
+        if (nameCount < 16 || startIndex === 0) {
+            startPosition = 5;
         }
 
-        console.log(nameBytes.toString());
+        let namesBytes = data.slice(startPosition, Buffer.byteLength(data));
+
         for (let i = 0; i < nameCount; i++) {
-            let name = "";
-            for (let char = 0; char < charLength; char++) {
-                name += String.fromCharCode(nameBytes[i * 8 + char]);
+            const nameBytes = namesBytes.slice(i * 8, i * 8 + 8);
+            const name = nameBytes.toString();
+            if (name) {
+                names[startIndex + i] = name;
             }
-            names[startIndex + i] = name;
         }
         console.log(names);
         return names;
