@@ -8,6 +8,11 @@ Follows protocol as documented here [ProBel SW-P-88](https://wwwapps.grassvalley
 
 Additionl notes on specific commands implemented in Ross Ultrix matrix can be seen here - [Ross Ultrix User Guide](<https://documentation.rossvideo.com/files/Manuals/Connectivity/Ultrix/Ultricore%20User%20Guide%20(2201DR-104).pdf>) implementing the IP transport section.
 
+# Install
+
+• `git clone https://github.com/ryanmccartney/probel-swp-08`
+* `npm i`
+
 # Features Implemented
 
 -   Interogate matrix for crosspoint information
