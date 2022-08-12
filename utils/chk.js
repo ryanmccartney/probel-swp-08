@@ -13,5 +13,6 @@ module.exports = (data) => {
     sum = sum % 128;
     checksum = ~parseInt(sum) + 1;
     checksumBuffer.writeInt8(checksum, 0);
+
     return checksumBuffer;
 };

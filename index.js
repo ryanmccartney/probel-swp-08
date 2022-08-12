@@ -174,8 +174,30 @@ module.exports = class Probel {
                 names[startIndex + i] = name;
             }
         }
-        console.log(names);
         return names;
+    };
+
+    parseTally = (data) => {
+        const matrixInfo = matrixLevelByte.decode(data[0]);
+        const tallyCount = data[1];
+
+        const sourceBytes = data[3];
+        const destinationBytes = data[4];
+
+        //Create Object Structure
+        const tallies = {};
+        tallies[matrixInfo.matrix] = {};
+        tallies[matrixInfo.matrix][matrixInfo.level] = {};
+
+        const source = div(sourceBytes, 128).readUInt8(0);
+        const destination = div(destinationBytes, 128).readUInt8(0);
+
+        //Populte with tally data
+        tallies[matrixInfo.matrix][matrixInfo.level][destination] = source;
+
+        console.log(tallies);
+
+        return tallies;
     };
 
     parseTallies = (data) => {
@@ -205,10 +227,10 @@ module.exports = class Probel {
         const dataBytes = data.slice(1, Buffer.byteLength(data) - 2);
         const btc = data[Buffer.byteLength(data) - 2];
         const chkInt = data[Buffer.byteLength(data) - 1];
-        const chkCalculated = chk(data.slice(1, Buffer.byteLength(data) - 2));
+        const chkCalculated = chk(data.slice(1, Buffer.byteLength(data) - 1));
 
-        // console.log(chkInt);
-        // console.log(chkCalculated.readUInt8(0));
+        console.log(chkInt);
+        //console.log(chkCalculated);
         // if (chkInt !== chkCalculated.readUInt8(0)) {
         //     console.log("Checksum invalid");
         //     return false;
@@ -241,7 +263,10 @@ module.exports = class Probel {
                 this.tallies = merge(this.tallies, this.parseTallies(dataBytes));
                 console.log(this.tallies);
                 break;
+            case 3:
             case 4:
+                //Handle Tally Information
+                this.tallies = merge(this.tallies, this.parseTally(dataBytes));
             case 132:
                 //Handle Crosspoint Response
                 console.log("CROSSPOINT MADE");
@@ -250,8 +275,8 @@ module.exports = class Probel {
         }
     };
 
-    interrogate = (destNumber) => {
-        const buffer = interrogateMessage(destNumber);
+    interrogate = (destinationNumber, sourceNumber, levelNumber) => {
+        const buffer = interrogateMessage(destinationNumber, sourceNumber, levelNumber);
         this.send(buffer);
     };
 
