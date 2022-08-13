@@ -2,11 +2,11 @@ const Probel = require("../index");
 
 const port = 8910;
 //const host = "172.24.51.74";
-const host = "172.26.182.8";
+const host = "172.26.182.100";
 
-const sourceTotal = 1005;
-const destinationTotal = 1005;
-const levelTotal = 16;
+const sourceTotal = 1004;
+const destinationTotal = 1004;
+const levelTotal = 17;
 
 const probel = new Probel(host, port, sourceTotal, destinationTotal, levelTotal);
 
@@ -14,7 +14,7 @@ const probel = new Probel(host, port, sourceTotal, destinationTotal, levelTotal)
 probel.debug = true;
 
 //Make a single crosspoint Probel.route(DESTINATION_LEVEL_NUMBER,SOURCE_NUMBER, DESTINATION_NUMBER)
-probel.route(12, 2, 2);
+//probel.route(15, 2, 4);
 
 //'Married Route' route all levels of one source to a destination Probel.routeAllLevels(SOURCE_NUMBER, DESTINATION_NUMBER)
-probel.routeAllLevels(2, 2);
+//probel.routeAllLevels(4, 3);
