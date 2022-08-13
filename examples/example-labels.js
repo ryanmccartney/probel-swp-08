@@ -1,11 +1,11 @@
 const Probel = require("./../index");
 
 const port = 8910;
-const host = "172.24.51.74";
+const host = "172.26.182.100";
 
-const sourceTotal = 1005;
-const destinationTotal = 1005;
-const levelTotal = 16;
+const sourceTotal = 188;
+const destinationTotal = 1329;
+const levelTotal = 17;
 
 const probel = new Probel(host, port, sourceTotal, destinationTotal, levelTotal);
 
