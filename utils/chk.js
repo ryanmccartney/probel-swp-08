@@ -5,14 +5,13 @@
 
 module.exports = (data) => {
     let sum = 0;
-    const checksumBuffer = Buffer.alloc(1);
     for (let value of data.values()) {
         sum += value;
     }
+    // sum = sum % 128;
+    //checksumBuffer.writeInt8(checksum, 0);
 
-    sum = sum % 128;
-    checksum = ~parseInt(sum) + 1;
-    checksumBuffer.writeInt8(checksum, 0);
-
-    return checksumBuffer;
+    const strHex = ((~sum + 1) >>> 0).toString(16);
+    const checksumBuffer = Buffer.from(strHex, "hex");
+    return checksumBuffer.slice(checksumBuffer.length - 1, checksumBuffer.length);
 };
