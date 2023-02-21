@@ -19,6 +19,24 @@ const interrogateMessage = (destinationNumber, sourceNumber, levelNumber) => {
     return message(commandNumber, data);
 };
 
+const nameCharByte = (nameChars) => {
+    const byte = Buffer.alloc(1);
+
+    if (nameChars === 4) {
+        byte.writeUInt8(0, 0);
+    }
+
+    if (nameChars === 8) {
+        byte.writeUInt8(1, 0);
+    }
+
+    if (nameChars === 12) {
+        byte.writeUInt8(2, 0);
+    }
+
+    return byte;
+};
+
 const crosspointMessage = (levelNumber, sourceNumber, destinationNumber, matrixNumber = 0) => {
     const commandNumber = 2;
     const multiplierNumber = multiplier(destinationNumber, sourceNumber);
@@ -64,7 +82,7 @@ const sourceNamesRequest = (extended = false, matrix = 0, chars = 8) => {
         const matrixByte = Buffer.alloc(1);
         matrixByte.writeUInt8(matrix, 0);
 
-        array = [matrixByte, Buffer.alloc(1), charBytes];
+        array = [matrixByte, Buffer.alloc(1), nameCharByte(charBytes)];
     } else {
         array = [charBytes];
     }
@@ -72,6 +90,20 @@ const sourceNamesRequest = (extended = false, matrix = 0, chars = 8) => {
     const data = Buffer.concat(array);
 
     return message(commandNumber, data);
+};
+
+const bufferClean = (data) => {
+    let previousByte;
+    const cleanedData = [];
+    for (let byte of data.entries()) {
+        if (previousByte !== byte) {
+            cleanedData.push(data.slice(byte[0], byte[0] + 1));
+        } else {
+        }
+        previousByte = byte;
+    }
+
+    return Buffer.concat(cleanedData);
 };
 
 const umdLabelRequest = () => {
@@ -92,7 +124,7 @@ const destinationNamesRequest = (extended = false, matrix = 0, chars = 8) => {
         const matrixByte = Buffer.alloc(1);
         matrixByte.writeUInt8(matrix, 0);
 
-        array = [matrixByte, charBytes];
+        array = [matrixByte, nameCharByte(charBytes)];
     } else {
         array = [charBytes];
     }
@@ -200,8 +232,8 @@ module.exports = class Probel {
         let namesBytes = data.slice(startPosition, Buffer.byteLength(data));
 
         for (let i = 0; i < nameCount; i++) {
-            const nameBytes = namesBytes.slice(i * 8, i * 8 + 8);
-            const name = nameBytes.toString();
+            const nameBytes = namesBytes.slice(i * charLength, i * charLength + charLength);
+            const name = nameBytes.toString().trim();
             if (name) {
                 names[startIndex + i] = name;
             }
@@ -210,23 +242,23 @@ module.exports = class Probel {
     };
 
     parseNamesExt = (data) => {
-        const matrixInfo = matrixLevelByte.decode(data[0]);
-        const charLength = charLengthLookup[data[1]];
-        const startIndex = 256 * data[2] + data[3] + 1;
-        const nameCount = data[4];
+        const matrixInfo = matrixLevelByte.decode(data[1]);
+        const charLength = charLengthLookup[data[2]];
+        const startIndex = 256 * data[3] + data[4] + 1;
+        const nameCount = data[5];
 
         const names = {};
 
         //Some unexplained changing of bit positions based on the number of labels in  a message
-        let startPosition = 6;
+        let startPosition = 7;
         if (nameCount < 16 || startIndex === 0) {
-            startPosition = 5;
+            startPosition = 6;
         }
 
         let namesBytes = data.slice(startPosition, Buffer.byteLength(data));
 
         for (let i = 0; i < nameCount; i++) {
-            const nameBytes = namesBytes.slice(i * 8, i * 8 + 8);
+            const nameBytes = namesBytes.slice(i * charLength, i * charLength + charLength);
             const name = nameBytes.toString();
             if (name) {
                 names[startIndex + i] = name;
@@ -281,32 +313,35 @@ module.exports = class Probel {
     };
 
     processData = (data) => {
+        data = bufferClean(data);
         const commandNumber = data.readUInt8(0);
         const dataBytes = data.slice(1, Buffer.byteLength(data) - 2);
         const btc = data[Buffer.byteLength(data) - 2];
         const chkInt = data[Buffer.byteLength(data) - 1];
         const chkCalculated = chk(data.slice(0, Buffer.byteLength(data) - 1));
 
-        if (chkInt !== chkCalculated.readUInt8(0)) {
-            console.log("Checksum invalid");
-            return false;
-        }
+        // if (chkInt !== chkCalculated.readUInt8(0)) {
+        //     console.log("Checksum invalid");
+        //     return false;
+        // }
 
-        if (btc !== Buffer.byteLength(dataBytes) + 1) {
-            console.log("Byte Count doesn't match message contents.");
-            return false;
-        }
+        // if (btc !== Buffer.byteLength(dataBytes) + 1) {
+        //     console.log("Byte Count doesn't match message contents.");
+        //     return false;
+        // }
 
         switch (commandNumber) {
             case 106:
+                console.log(data.toString());
                 //Handle Source Names Response (8 chars per name)
                 this.sourceNames = { ...this.sourceNames, ...this.parseNames(dataBytes) };
+                //console.log({ ...this.sourceNames, ...this.parseNamesExt(dataBytes) });
                 break;
             case 234:
                 //Handle Source Names Response (8 chars per name)
                 this.sourceNames = { ...this.sourceNames, ...this.parseNamesExt(dataBytes) };
+                //console.log({ ...this.sourceNames, ...this.parseNamesExt(dataBytes) });
                 break;
-
             case 108:
             case 236:
                 //Handle Source Names UMD Response (16 chars per name)

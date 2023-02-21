@@ -5,7 +5,7 @@ const host = "172.26.182.100";
 
 const sourceTotal = 1004;
 const destinationTotal = 1004;
-const levelTotal = 16;
+const levelTotal = 15;
 
 const probel = new Probel(host, port, sourceTotal, destinationTotal, levelTotal);
 
