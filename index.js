@@ -6,6 +6,7 @@
 const Net = require("net");
 const { mod, div, chk, matrixLevelByte, multiplier, message, ackMessage, nakMessage } = require("./utils/utils");
 const merge = require("./utils/merge");
+const EventEmitter = require("events");
 
 const charLengthLookup = [4, 8, 12];
 
@@ -170,6 +171,7 @@ module.exports = class Probel {
         this.destinationNames = {};
         this.umdLabels = {};
         this.connect();
+        this.events = new EventEmitter();
 
         if (levels > 16 || sources > 1024 || destinations > 1024) {
             console.log("Probel: using extended commands");
@@ -313,6 +315,7 @@ module.exports = class Probel {
     };
 
     processData = (data) => {
+        let state = false;
         data = bufferClean(data);
         const commandNumber = data.readUInt8(0);
         const dataBytes = data.slice(1, Buffer.byteLength(data) - 2);
@@ -332,43 +335,63 @@ module.exports = class Probel {
 
         switch (commandNumber) {
             case 106:
-                console.log(data.toString());
                 //Handle Source Names Response (8 chars per name)
-                this.sourceNames = { ...this.sourceNames, ...this.parseNames(dataBytes) };
-                //console.log({ ...this.sourceNames, ...this.parseNamesExt(dataBytes) });
+                const newSourceNames = this.parseNames(dataBytes);
+                if (newSourceNames) {
+                    state = true;
+                    this.sourceNames = { ...this.sourceNames, ...newSourceNames };
+                }
                 break;
             case 234:
                 //Handle Source Names Response (8 chars per name)
-                this.sourceNames = { ...this.sourceNames, ...this.parseNamesExt(dataBytes) };
-                //console.log({ ...this.sourceNames, ...this.parseNamesExt(dataBytes) });
+                const newSourceNamesExt = this.parseNamesExt(dataBytes);
+                if (newSourceNames) {
+                    state = true;
+                    this.sourceNames = { ...this.sourceNames, ...newSourceNamesExt };
+                }
                 break;
             case 108:
             case 236:
                 //Handle Source Names UMD Response (16 chars per name)
-                this.umdLabels = { ...this.umdLabels, ...this.parseNames(dataBytes) };
+                const newUmdLabels = this.parseNames(dataBytes);
+                if (newUmdLabels) {
+                    state = true;
+                    this.umdLabels = { ...this.umdLabels, ...newUmdLabels };
+                }
                 break;
             case 107:
             case 235:
                 //Handle Destination Names Response (8 chars per name)
-                this.destinationNames = merge(this.destinationNames, this.parseNames(dataBytes));
+                const newDestinationNames = this.parseNames(dataBytes);
+                if (newDestinationNames) {
+                    state = true;
+                    this.destinationNames = merge(this.destinationNames, newDestinationNames);
+                }
                 break;
             case 23:
             case 151:
                 //Handle Tally Dump Response
-                this.tallies = merge(this.tallies, this.parseTallies(dataBytes));
-                console.log(this.tallies);
+                const newTallies = this.parseTallies(dataBytes);
+                if (newTallies) {
+                    state = true;
+                    this.tallies = merge(this.tallies, newTallies);
+                }
                 break;
             case 3:
             case 4:
                 //Handle Tally Information
-                this.tallies = merge(this.tallies, this.parseTally(dataBytes));
+                const newTalliesInfo = this.parseTallies(dataBytes);
+                if (newTallies) {
+                    state = true;
+                    this.tallies = merge(this.tallies, newTalliesInfo);
+                }
             case 131:
             case 132:
                 //Handle Crosspoint Response
                 console.log("Extended Crosspoint Made");
-                console.log(dataBytes);
                 break;
         }
+        this.events.emit("message", commandNumber, state);
     };
 
     interrogate = (destinationNumber, sourceNumber, levelNumber) => {
