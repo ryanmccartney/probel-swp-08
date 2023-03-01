@@ -185,6 +185,38 @@ module.exports = class Probel {
         }
     };
 
+    waitForCommand = (commandNumber, timeout = 2000) => {
+        return new Promise((resolve, reject) => {
+            // Set up the timeout
+            const timer = setTimeout(() => {
+                resolve({
+                    status: false,
+                    message: `Command timed out after ${timeout}ms.`,
+                    timeout: timeout,
+                    commandNumber: commandNumber,
+                });
+            }, timeout);
+
+            this.events.on(commandNumber, (data) => {
+                try {
+                    console.log(`Command number ${commandNumber} triggered`);
+                    if (data) {
+                        clearTimeout(timer);
+                        resolve(value);
+                    }
+                } catch (error) {
+                    clearTimeout(timer);
+                    resolve({
+                        status: false,
+                        message: `An error has occured.`,
+                        error: error,
+                        commandNumber: commandNumber,
+                    });
+                }
+            });
+        });
+    };
+
     connect = () => {
         this.client = new Net.Socket();
 
@@ -315,7 +347,7 @@ module.exports = class Probel {
     };
 
     processData = (data) => {
-        let state = false;
+        let response;
         data = bufferClean(data);
         const commandNumber = data.readUInt8(0);
         const dataBytes = data.slice(1, Buffer.byteLength(data) - 2);
@@ -338,16 +370,16 @@ module.exports = class Probel {
                 //Handle Source Names Response (8 chars per name)
                 const newSourceNames = this.parseNames(dataBytes);
                 if (newSourceNames) {
-                    state = true;
-                    this.sourceNames = { ...this.sourceNames, ...newSourceNames };
+                    response = { ...this.sourceNames, ...newSourceNames };
+                    this.sourceNames = response;
                 }
                 break;
             case 234:
                 //Handle Source Names Response (8 chars per name)
                 const newSourceNamesExt = this.parseNamesExt(dataBytes);
                 if (newSourceNames) {
-                    state = true;
-                    this.sourceNames = { ...this.sourceNames, ...newSourceNamesExt };
+                    response = { ...this.sourceNames, ...newSourceNamesExt };
+                    this.sourceNames = response;
                 }
                 break;
             case 108:
@@ -355,8 +387,8 @@ module.exports = class Probel {
                 //Handle Source Names UMD Response (16 chars per name)
                 const newUmdLabels = this.parseNames(dataBytes);
                 if (newUmdLabels) {
-                    state = true;
-                    this.umdLabels = { ...this.umdLabels, ...newUmdLabels };
+                    response = { ...this.umdLabels, ...newUmdLabels };
+                    this.umdLabels = response;
                 }
                 break;
             case 107:
@@ -364,8 +396,8 @@ module.exports = class Probel {
                 //Handle Destination Names Response (8 chars per name)
                 const newDestinationNames = this.parseNames(dataBytes);
                 if (newDestinationNames) {
-                    state = true;
-                    this.destinationNames = merge(this.destinationNames, newDestinationNames);
+                    response = merge(this.destinationNames, newDestinationNames);
+                    this.destinationNames = response;
                 }
                 break;
             case 23:
@@ -373,8 +405,8 @@ module.exports = class Probel {
                 //Handle Tally Dump Response
                 const newTallies = this.parseTallies(dataBytes);
                 if (newTallies) {
-                    state = true;
-                    this.tallies = merge(this.tallies, newTallies);
+                    response = merge(this.tallies, newTallies);
+                    this.tallies = response;
                 }
                 break;
             case 3:
@@ -382,16 +414,17 @@ module.exports = class Probel {
                 //Handle Tally Information
                 const newTalliesInfo = this.parseTallies(dataBytes);
                 if (newTallies) {
-                    state = true;
-                    this.tallies = merge(this.tallies, newTalliesInfo);
+                    response = merge(this.tallies, newTalliesInfo);
+                    this.tallies = response;
                 }
             case 131:
             case 132:
                 //Handle Crosspoint Response
                 console.log("Extended Crosspoint Made");
+                response = true;
                 break;
         }
-        this.events.emit("message", commandNumber, state);
+        this.events.emit("message", commandNumber, response);
     };
 
     interrogate = (destinationNumber, sourceNumber, levelNumber) => {
@@ -417,9 +450,10 @@ module.exports = class Probel {
         }
     };
 
-    getSourceNames = () => {
+    getSourceNames = async () => {
         const buffer = sourceNamesRequest(this.extended, this.matrix - 1, this.chars);
         this.send(buffer);
+        return await this.waitForCommand("100");
     };
 
     getDestinationNames = () => {
