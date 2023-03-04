@@ -145,11 +145,9 @@ const tallyStateRequest = (level = 0, matrix = 0) => {
 
 const isAck = (response) => {
     if (!Buffer.compare(response, ackMessage())) {
-        console.log("Message Acknowledged");
         return true;
     }
     if (!Buffer.compare(response, nakMessage())) {
-        console.log("Message Not Acknowledged");
         return false;
     }
 };
@@ -225,13 +223,13 @@ module.exports = class Probel {
         this.client = new Net.Socket();
 
         this.client.connect({ port: this.port, host: this.host }, () => {
-            console.log("Connection established with the Probel SW-P-08 server.");
+            this.log("Connection established with the Probel SW-P-08 server.");
         });
 
         this.client.on("data", this.handleData);
 
         this.client.on("end", function () {
-            console.log("Connection closed");
+            this.log("Connection closed");
         });
     };
 
@@ -357,15 +355,15 @@ module.exports = class Probel {
         const chkInt = data[Buffer.byteLength(data) - 1];
         const chkCalculated = chk(data.slice(0, Buffer.byteLength(data) - 1));
 
-        // if (chkInt !== chkCalculated.readUInt8(0)) {
-        //     console.log("Checksum invalid");
-        //     return false;
-        // }
+        if (chkInt !== chkCalculated.readUInt8(0)) {
+            this.log("Checksum invalid");
+            return false;
+        }
 
-        // if (btc !== Buffer.byteLength(dataBytes) + 1) {
-        //     console.log("Byte Count doesn't match message contents.");
-        //     return false;
-        // }
+        if (btc !== Buffer.byteLength(dataBytes) + 1) {
+            this.log("Byte Count doesn't match message contents.");
+            return false;
+        }
 
         switch (commandNumber) {
             case 106:
@@ -375,14 +373,32 @@ module.exports = class Probel {
                     response = { ...this.sourceNames, ...newSourceNames };
                     this.sourceNames = response;
                 }
+
+                if (
+                    parseInt(Object.keys(newSourceNamesExt)[Object.keys(newSourceNamesExt).length - 1]) < this.sources
+                ) {
+                    response = false;
+                } else {
+                    response = this.sourceNames;
+                }
+
                 break;
             case 234:
                 //Handle Source Names Response (8 chars per name)
                 const newSourceNamesExt = this.parseNamesExt(dataBytes);
-                if (newSourceNames) {
+                if (newSourceNamesExt) {
                     response = { ...this.sourceNames, ...newSourceNamesExt };
                     this.sourceNames = response;
                 }
+
+                if (
+                    parseInt(Object.keys(newSourceNamesExt)[Object.keys(newSourceNamesExt).length - 1]) < this.sources
+                ) {
+                    response = false;
+                } else {
+                    response = this.sourceNames;
+                }
+
                 break;
             case 108:
             case 236:
@@ -402,6 +418,7 @@ module.exports = class Probel {
                     this.destinationNames = response;
                 }
                 break;
+            case 22:
             case 23:
             case 151:
                 //Handle Tally Dump Response
@@ -446,32 +463,36 @@ module.exports = class Probel {
     };
 
     //Route all the levels from a given source to a given destination (1 to 17)
-    routeAllLevels = (srcNumber, destNumber) => {
+    routeAllLevels = async (srcNumber, destNumber) => {
         for (let level = 1; level <= this.levels; level++) {
             this.route(level, srcNumber, destNumber);
+            return await this.waitForCommand(["3", "4"]);
         }
     };
 
     getSourceNames = async () => {
         const buffer = sourceNamesRequest(this.extended, this.matrix - 1, this.chars);
         this.send(buffer);
-        return await this.waitForCommand("106");
+        return await this.waitForCommand(["106", "234"]);
     };
 
-    getDestinationNames = () => {
+    getDestinationNames = async () => {
         const buffer = destinationNamesRequest(this.extended, this.matrix - 1, this.chars);
         this.send(buffer);
+        return await this.waitForCommand(["107", "235"]);
     };
 
-    getUmdLabels = () => {
+    getUmdLabels = async () => {
         const buffer = umdLabelRequest();
         this.send(buffer);
+        return await this.waitForCommand(["108", "236"]);
     };
 
-    getState = () => {
+    getState = async () => {
         for (let level = 0; level < this.levels; level++) {
             const buffer = tallyStateRequest(level);
             this.send(buffer);
         }
+        return await this.waitForCommand(["22", "23"]);
     };
 };
