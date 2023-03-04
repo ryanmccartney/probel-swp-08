@@ -10,12 +10,12 @@ const EventEmitter = require("events");
 
 const charLengthLookup = [4, 8, 12];
 
-const interrogateMessage = (destinationNumber, sourceNumber, levelNumber) => {
+const interrogateMessage = (destinationNumber, levelNumber = 0, matrixNumber = 0) => {
     const commandNumber = 1;
-    const multiplierNumber = multiplier(destinationNumber, sourceNumber);
+    const multiplierNumber = multiplier(destinationNumber, 0);
     const destNumber = mod(destinationNumber, 128);
 
-    const array = [matrixLevelByte.encode(0, levelNumber), multiplierNumber, destNumber];
+    const array = [matrixLevelByte.encode(matrixNumber, levelNumber), multiplierNumber, destNumber];
     const data = Buffer.concat(array);
     return message(commandNumber, data);
 };
@@ -200,8 +200,8 @@ module.exports = class Probel {
             for (let commandNumber of commandNumbers) {
                 this.events.on(commandNumber, (data) => {
                     try {
-                        this.log(`Command number ${commandNumber} triggered`);
                         if (data) {
+                            this.log(`Command number ${commandNumber} triggered`);
                             clearTimeout(timer);
                             resolve(data);
                         }
@@ -347,108 +347,127 @@ module.exports = class Probel {
     };
 
     processData = (data) => {
-        let response;
-        data = bufferClean(data);
-        const commandNumber = data.readUInt8(0);
-        const dataBytes = data.slice(1, Buffer.byteLength(data) - 2);
-        const btc = data[Buffer.byteLength(data) - 2];
-        const chkInt = data[Buffer.byteLength(data) - 1];
-        const chkCalculated = chk(data.slice(0, Buffer.byteLength(data) - 1));
+        if (data.length > 0) {
+            let response;
+            data = bufferClean(data);
+            const commandNumber = data.readUInt8(0);
+            const dataBytes = data.slice(1, Buffer.byteLength(data) - 2);
+            const btc = data[Buffer.byteLength(data) - 2];
+            const chkInt = data[Buffer.byteLength(data) - 1];
+            const chkCalculated = chk(data.slice(0, Buffer.byteLength(data) - 1));
 
-        if (chkInt !== chkCalculated.readUInt8(0)) {
-            this.log("Checksum invalid");
-            return false;
+            // if (chkInt !== chkCalculated.readUInt8(0)) {
+            //     this.log("Checksum invalid");
+            //     return false;
+            // }
+
+            // if (btc !== Buffer.byteLength(dataBytes) + 1) {
+            //     this.log("Byte Count doesn't match message contents.");
+            //     return false;
+            // }
+
+            switch (commandNumber) {
+                case 106:
+                    //Handle Source Names Response (8 chars per name)
+                    const newSourceNames = this.parseNames(dataBytes);
+                    if (newSourceNames) {
+                        response = { ...this.sourceNames, ...newSourceNames };
+                        this.sourceNames = response;
+                    }
+
+                    if (parseInt(Object.keys(newSourceNames)[Object.keys(newSourceNames).length - 1]) < this.sources) {
+                        response = false;
+                    } else {
+                        response = this.sourceNames;
+                    }
+
+                    break;
+                case 234:
+                    //Handle Source Names Response (8 chars per name)
+                    const newSourceNamesExt = this.parseNamesExt(dataBytes);
+                    if (newSourceNamesExt) {
+                        response = { ...this.sourceNames, ...newSourceNamesExt };
+                        this.sourceNames = response;
+                    }
+
+                    if (
+                        parseInt(Object.keys(newSourceNamesExt)[Object.keys(newSourceNamesExt).length - 1]) <
+                        this.sources
+                    ) {
+                        response = false;
+                    } else {
+                        response = this.sourceNames;
+                    }
+
+                    break;
+                case 108:
+                case 236:
+                    //Handle Source Names UMD Response (16 chars per name)
+                    const newUmdLabels = this.parseNames(dataBytes);
+                    if (newUmdLabels) {
+                        response = { ...this.umdLabels, ...newUmdLabels };
+                        this.umdLabels = response;
+                    }
+                    break;
+                case 107:
+                case 235:
+                    //Handle Destination Names Response (8 chars per name)
+                    const newDestinationNames = this.parseNames(dataBytes);
+                    if (newDestinationNames) {
+                        response = merge(this.destinationNames, newDestinationNames);
+                        this.destinationNames = response;
+                    }
+                    break;
+                case 22:
+                case 23:
+                case 151:
+                    const newTallies = this.parseTallies(dataBytes);
+                    if (newTallies) {
+                        response = merge(this.tallies, newTallies);
+                        this.tallies = response;
+
+                        const tallyMatrix = Object.keys(newTallies)[0];
+                        const tallyLevel = Object.keys(newTallies[tallyMatrix])[0];
+
+                        if (
+                            parseInt(
+                                Object.keys(newTallies[tallyMatrix][tallyLevel])[
+                                    Object.keys(newTallies[tallyMatrix][tallyLevel]).length - 1
+                                ]
+                            ) < this.destinations ||
+                            tallyLevel < this.levels
+                        ) {
+                            response = false;
+                        }
+                    }
+
+                    break;
+                case 3:
+                case 4:
+                    //Handle Tally Information
+                    const newTally = this.parseTallies(dataBytes);
+                    console.log(newTally);
+                    if (newTally) {
+                        response = merge(this.tallies, newTally);
+                        this.tallies = response;
+                    }
+                    break;
+                case 131:
+                case 132:
+                    //Handle Crosspoint Response
+                    this.log("Extended Crosspoint Made");
+                    response = true;
+                    break;
+            }
+            this.events.emit(commandNumber, response);
         }
-
-        if (btc !== Buffer.byteLength(dataBytes) + 1) {
-            this.log("Byte Count doesn't match message contents.");
-            return false;
-        }
-
-        switch (commandNumber) {
-            case 106:
-                //Handle Source Names Response (8 chars per name)
-                const newSourceNames = this.parseNames(dataBytes);
-                if (newSourceNames) {
-                    response = { ...this.sourceNames, ...newSourceNames };
-                    this.sourceNames = response;
-                }
-
-                if (
-                    parseInt(Object.keys(newSourceNamesExt)[Object.keys(newSourceNamesExt).length - 1]) < this.sources
-                ) {
-                    response = false;
-                } else {
-                    response = this.sourceNames;
-                }
-
-                break;
-            case 234:
-                //Handle Source Names Response (8 chars per name)
-                const newSourceNamesExt = this.parseNamesExt(dataBytes);
-                if (newSourceNamesExt) {
-                    response = { ...this.sourceNames, ...newSourceNamesExt };
-                    this.sourceNames = response;
-                }
-
-                if (
-                    parseInt(Object.keys(newSourceNamesExt)[Object.keys(newSourceNamesExt).length - 1]) < this.sources
-                ) {
-                    response = false;
-                } else {
-                    response = this.sourceNames;
-                }
-
-                break;
-            case 108:
-            case 236:
-                //Handle Source Names UMD Response (16 chars per name)
-                const newUmdLabels = this.parseNames(dataBytes);
-                if (newUmdLabels) {
-                    response = { ...this.umdLabels, ...newUmdLabels };
-                    this.umdLabels = response;
-                }
-                break;
-            case 107:
-            case 235:
-                //Handle Destination Names Response (8 chars per name)
-                const newDestinationNames = this.parseNames(dataBytes);
-                if (newDestinationNames) {
-                    response = merge(this.destinationNames, newDestinationNames);
-                    this.destinationNames = response;
-                }
-                break;
-            case 22:
-            case 23:
-            case 151:
-                //Handle Tally Dump Response
-                const newTallies = this.parseTallies(dataBytes);
-                if (newTallies) {
-                    response = merge(this.tallies, newTallies);
-                    this.tallies = response;
-                }
-                break;
-            case 3:
-            case 4:
-                //Handle Tally Information
-                const newTalliesInfo = this.parseTallies(dataBytes);
-                if (newTallies) {
-                    response = merge(this.tallies, newTalliesInfo);
-                    this.tallies = response;
-                }
-            case 131:
-            case 132:
-                //Handle Crosspoint Response
-                this.log("Extended Crosspoint Made");
-                response = true;
-                break;
-        }
-        this.events.emit(commandNumber, response);
     };
 
-    interrogate = (destinationNumber, sourceNumber, levelNumber) => {
-        const buffer = interrogateMessage(destinationNumber, sourceNumber, levelNumber);
+    //Interrogate a single crosspoint (destinationNumber, levelNumber, matrixNumber)
+    interrogate = async (destinationNumber, levelNumber, matrixNumber) => {
+        const buffer = interrogateMessage(destinationNumber, levelNumber, matrixNumber);
         this.send(buffer);
+        return await this.waitForCommand(["3", "131"]);
     };
 
     //Route a source to a destination at a specified level only (1 to 17)
