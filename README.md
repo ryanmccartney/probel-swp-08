@@ -1,5 +1,7 @@
 # probel-swp-08
 
+[![NPM Publish](https://github.com/ryanmccartney/probel-swp-08/actions/workflows/publish.yml/badge.svg)](https://github.com/ryanmccartney/probel-swp-08/actions/workflows/publish.yml)
+
 Probel routing protocol 8 implemented in Javascript
 
 A simple Javascript [NPM Package](https://www.npmjs.com/package/probel-swp-08) for controlling video routers supporting SW-P-88.
