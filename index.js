@@ -1,6 +1,6 @@
 //NAME: index.js
 //AUTH: Ryan McCartney (rmccartney856@gmail.com)
-//DESC: Main class for the Probel SW-P-88 client
+//DESC: Main class for the Probel SW-P-08 client
 //DATE: 07/03/2022
 
 const Net = require("net");
@@ -174,7 +174,7 @@ module.exports = class Probel {
         this.events = new EventEmitter();
 
         if (levels > 16 || sources > 1024 || destinations > 1024) {
-            console.log("Probel: using extended commands");
+            this.log("Probel: using extended commands");
             this.extended = true;
         }
     }
@@ -185,7 +185,7 @@ module.exports = class Probel {
         }
     };
 
-    waitForCommand = (commandNumber, timeout = 2000) => {
+    waitForCommand = (commandNumbers, timeout = 5000) => {
         return new Promise((resolve, reject) => {
             // Set up the timeout
             const timer = setTimeout(() => {
@@ -193,27 +193,31 @@ module.exports = class Probel {
                     status: false,
                     message: `Command timed out after ${timeout}ms.`,
                     timeout: timeout,
-                    commandNumber: commandNumber,
+                    commandNumber: commandNumbers,
                 });
             }, timeout);
 
-            this.events.on(commandNumber, (data) => {
-                try {
-                    console.log(`Command number ${commandNumber} triggered`);
-                    if (data) {
+            if (typeof commandNumbers === "string") [(commandNumbers = [commandNumbers])];
+
+            for (let commandNumber of commandNumbers) {
+                this.events.on(commandNumber, (data) => {
+                    try {
+                        this.log(`Command number ${commandNumber} triggered`);
+                        if (data) {
+                            clearTimeout(timer);
+                            resolve(data);
+                        }
+                    } catch (error) {
                         clearTimeout(timer);
-                        resolve(value);
+                        resolve({
+                            status: false,
+                            message: `An error has occured.`,
+                            error: error,
+                            commandNumber: commandNumber,
+                        });
                     }
-                } catch (error) {
-                    clearTimeout(timer);
-                    resolve({
-                        status: false,
-                        message: `An error has occured.`,
-                        error: error,
-                        commandNumber: commandNumber,
-                    });
-                }
-            });
+                });
+            }
         });
     };
 
@@ -221,7 +225,7 @@ module.exports = class Probel {
         this.client = new Net.Socket();
 
         this.client.connect({ port: this.port, host: this.host }, () => {
-            console.log("Connection established with the Probel SW-P-88 server.");
+            console.log("Connection established with the Probel SW-P-08 server.");
         });
 
         this.client.on("data", this.handleData);
@@ -318,8 +322,6 @@ module.exports = class Probel {
 
         //Populte with tally data
         tallies[matrixInfo.matrix][matrixInfo.level][destination] = source;
-
-        console.log(tallies);
 
         return tallies;
     };
@@ -420,11 +422,11 @@ module.exports = class Probel {
             case 131:
             case 132:
                 //Handle Crosspoint Response
-                console.log("Extended Crosspoint Made");
+                this.log("Extended Crosspoint Made");
                 response = true;
                 break;
         }
-        this.events.emit("message", commandNumber, response);
+        this.events.emit(commandNumber, response);
     };
 
     interrogate = (destinationNumber, sourceNumber, levelNumber) => {
@@ -453,7 +455,7 @@ module.exports = class Probel {
     getSourceNames = async () => {
         const buffer = sourceNamesRequest(this.extended, this.matrix - 1, this.chars);
         this.send(buffer);
-        return await this.waitForCommand("100");
+        return await this.waitForCommand("106");
     };
 
     getDestinationNames = () => {
