@@ -18,7 +18,7 @@ const main = async () => {
     console.log(sourceNames);
 
     //Get destination labels (8 chars long) and return them in an object
-    const destinationNames = await probel.getDestinationNames();
+    //const destinationNames = await probel.getDestinationNames();
     //console.log(destinationNames);
 };
 

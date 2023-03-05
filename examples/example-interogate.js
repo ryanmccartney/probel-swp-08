@@ -17,7 +17,7 @@ const main = async () => {
     let state = await probel.interrogate(1, 1, 1);
 
     //Interogate the whole router
-    //state = await probel.getState();
+    state = await probel.getState();
 
     console.log(state);
 };

@@ -156,6 +156,7 @@ module.exports = class Probel {
     constructor(host, port, sources = 0, destinations = 0, levels = 17, matrix = 1, chars = 8) {
         this.debug = false;
         this.extended = false;
+        this.connected = false;
         this.host = host;
         this.port = port;
         this.sources = sources;
@@ -219,24 +220,50 @@ module.exports = class Probel {
         });
     };
 
+    waitForConnection = (timeout = 5000) => {
+        return new Promise((resolve, reject) => {
+            if (this.connected == true) {
+                resolve(true);
+            }
+            // Set up the timeout
+            const timer = setTimeout(() => {
+                resolve(false);
+            }, timeout);
+
+            this.events.on("connection", (data = true) => {
+                clearTimeout(timer);
+                resolve(data);
+            });
+        });
+    };
+
     connect = () => {
         this.client = new Net.Socket();
 
         this.client.connect({ port: this.port, host: this.host }, () => {
             this.log("Connection established with the Probel SW-P-08 server.");
+            this.connected = true;
+            this.events.emit("connection", true);
         });
 
         this.client.on("data", this.handleData);
 
         this.client.on("end", function () {
+            this.connected = false;
+            this.events.emit("connection", false);
             this.log("Connection closed");
         });
     };
 
-    send = (message) => {
+    send = async (message) => {
         // Log bytes sent to router when in debug mode
-        this.log(`Tx (${message.length}): ${message.toString("hex")}`);
-        this.client.write(message);
+        const connected = await this.waitForConnection();
+        if (connected) {
+            this.log(`Tx (${message.length}): ${message.toString("hex")}`);
+            this.client.write(message);
+        } else {
+            this.log("Connection to the matrix timed out.");
+        }
     };
 
     handleData = (reply) => {
@@ -435,8 +462,9 @@ module.exports = class Probel {
                                     Object.keys(newTallies[tallyMatrix][tallyLevel]).length - 1
                                 ]
                             ) < this.destinations ||
-                            tallyLevel < this.levels
+                            tallyLevel < this.levels - 1
                         ) {
+                            console.log("HERE");
                             response = false;
                         }
                     }
