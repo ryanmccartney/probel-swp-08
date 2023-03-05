@@ -58,3 +58,19 @@ probel.route(5, 16, 16);
 //'Married Route' route all levels of one source to a destination Probel.routeAllLevels(SOURCE_NUMBER, DESTINATION_NUMBER)
 probel.routeAllLevels(10, 10);
 ```
+
+## Asynchronous Calls
+
+```js
+const main = async () => {
+    //Get source labels (8 chars long) and return them in an object
+    const sourceNames = await probel.getSourceNames();
+    console.log(sourceNames);
+
+    //Get destination labels (8 chars long) and return them in an object
+    const destinationNames = await probel.getDestinationNames();
+    console.log(destinationNames);
+};
+
+main();
+```

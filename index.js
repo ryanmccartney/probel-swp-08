@@ -20,6 +20,30 @@ const interrogateMessage = (destinationNumber, levelNumber = 0, matrixNumber = 0
     return message(commandNumber, data);
 };
 
+const indexOfAll = (buffer, searchItem) => {
+    let i = buffer.indexOf(searchItem, 0, "hex");
+    const indexes = [];
+
+    while (i !== -1) {
+        indexes.push(i);
+        i = i + 2;
+        i = buffer.indexOf(searchItem, i, "hex");
+    }
+    return indexes;
+};
+
+const getMessages = (data) => {
+    const messages = [];
+    const somIndexes = indexOfAll(data, "1002");
+    const eomIndexed = indexOfAll(data, "1003");
+
+    for (let i in somIndexes) {
+        //console.log(data.slice(somIndexes[i] + 2, eomIndexed[i]).toString("hex"));
+        messages.push(data.slice(somIndexes[i] + 2, eomIndexed[i]));
+    }
+    return messages;
+};
+
 const nameCharByte = (nameChars = 8) => {
     const byte = Buffer.alloc(1);
 
@@ -266,9 +290,12 @@ module.exports = class Probel {
 
         if (isAck(reply)) {
         } else {
-            const slice = reply.slice(2, Buffer.byteLength(reply) - 2);
-            this.processData(slice);
+            const messages = getMessages(reply);
+            for (let message of messages) {
+                this.processData(message);
+            }
         }
+
         this.send(ackMessage());
     };
 
@@ -462,8 +489,6 @@ module.exports = class Probel {
                         response = merge(this.destinationNames, newDestinationNamesExt);
                         this.destinationNames = response;
                     }
-
-                    console.log(newDestinationNamesExt);
 
                     if (
                         parseInt(Object.keys(newDestinationNamesExt)[Object.keys(newDestinationNamesExt).length - 1]) <

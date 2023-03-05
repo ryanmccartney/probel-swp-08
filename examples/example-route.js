@@ -16,4 +16,4 @@ probel.debug = true;
 probel.route(5, 16, 16);
 
 //'Married Route' route all levels of one source to a destination Probel.routeAllLevels(SOURCE_NUMBER, DESTINATION_NUMBER)
-//probel.routeAllLevels(10, 10);
+probel.routeAllLevels(9, 9);
