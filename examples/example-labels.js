@@ -3,8 +3,8 @@ const Probel = require("./../index");
 const port = 8910;
 const host = "172.24.51.74";
 
-const sourceTotal = 2000;
-const destinationTotal = 2000;
+const sourceTotal = 1560;
+const destinationTotal = 360;
 const levelTotal = 17;
 
 const probel = new Probel(host, port, sourceTotal, destinationTotal, levelTotal);
@@ -18,8 +18,8 @@ const main = async () => {
     console.log(sourceNames);
 
     //Get destination labels (8 chars long) and return them in an object
-    //const destinationNames = await probel.getDestinationNames();
-    //console.log(destinationNames);
+    const destinationNames = await probel.getDestinationNames();
+    console.log(destinationNames);
 };
 
 main();

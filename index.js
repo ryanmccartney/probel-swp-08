@@ -20,7 +20,7 @@ const interrogateMessage = (destinationNumber, levelNumber = 0, matrixNumber = 0
     return message(commandNumber, data);
 };
 
-const nameCharByte = (nameChars) => {
+const nameCharByte = (nameChars = 8) => {
     const byte = Buffer.alloc(1);
 
     if (nameChars === 4) {
@@ -70,12 +70,9 @@ const crosspointMessageExtended = (levelNumber, sourceNumber, destinationNumber,
     return message(commandNumber, data, true);
 };
 
-const sourceNamesRequest = (extended = false, matrix = 0, chars = 8) => {
+const sourceNamesRequest = (extended = false, matrix = 0, chars = 12) => {
     let commandNumber = 100;
     let array = [];
-
-    const charBytes = Buffer.alloc(1);
-    charBytes.writeUInt8(chars, 0);
 
     if (extended) {
         commandNumber = 228;
@@ -83,7 +80,7 @@ const sourceNamesRequest = (extended = false, matrix = 0, chars = 8) => {
         const matrixByte = Buffer.alloc(1);
         matrixByte.writeUInt8(matrix, 0);
 
-        array = [matrixByte, Buffer.alloc(1), nameCharByte(charBytes)];
+        array = [matrixByte, Buffer.alloc(1), nameCharByte(chars)];
     } else {
         array = [charBytes];
     }
@@ -97,13 +94,13 @@ const bufferClean = (data) => {
     let previousByte;
     const cleanedData = [];
     for (let byte of data.entries()) {
-        if (previousByte !== byte) {
-            cleanedData.push(data.slice(byte[0], byte[0] + 1));
+        if (byte[1] === 16 && previousByte === 16) {
+            previousByte = 0;
         } else {
+            cleanedData.push(data.slice(byte[0], byte[0] + 1));
+            previousByte = byte[1];
         }
-        previousByte = byte;
     }
-
     return Buffer.concat(cleanedData);
 };
 
@@ -116,16 +113,13 @@ const destinationNamesRequest = (extended = false, matrix = 0, chars = 8) => {
     let commandNumber = 102;
     let array = [];
 
-    const charBytes = Buffer.alloc(1);
-    charBytes.writeUInt8(chars, 0);
-
     if (extended) {
         commandNumber = 230;
 
         const matrixByte = Buffer.alloc(1);
         matrixByte.writeUInt8(matrix, 0);
 
-        array = [matrixByte, nameCharByte(charBytes)];
+        array = [matrixByte, nameCharByte(chars)];
     } else {
         array = [charBytes];
     }
@@ -202,7 +196,7 @@ module.exports = class Probel {
                 this.events.on(commandNumber, (data) => {
                     try {
                         if (data) {
-                            this.log(`Command number ${commandNumber} triggered`);
+                            //this.log(`Command number ${commandNumber} triggered`);
                             clearTimeout(timer);
                             resolve(data);
                         }
@@ -304,16 +298,23 @@ module.exports = class Probel {
         return names;
     };
 
-    parseNamesExt = (data) => {
+    parseNamesExt = (data, sourceNames = false) => {
         const matrixInfo = matrixLevelByte.decode(data[1]);
-        const charLength = charLengthLookup[data[2]];
-        const startIndex = 256 * data[3] + data[4] + 1;
+        const charLength = 8;
+        charLengthLookup[data[2]];
+        let startIndex = 256 * data[3] + data[4] + 1;
+        if (!sourceNames) {
+            startIndex = 256 * data[2] + data[3] + 1;
+        }
         const nameCount = data[5];
 
         const names = {};
 
         //Some unexplained changing of bit positions based on the number of labels in  a message
-        let startPosition = 7;
+        let startPosition = 5;
+        if (sourceNames) {
+            startPosition = 6;
+        }
         if (nameCount < 16 || startIndex === 0) {
             startPosition = 6;
         }
@@ -322,11 +323,12 @@ module.exports = class Probel {
 
         for (let i = 0; i < nameCount; i++) {
             const nameBytes = namesBytes.slice(i * charLength, i * charLength + charLength);
-            const name = nameBytes.toString();
+            const name = nameBytes.toString().trim();
             if (name) {
                 names[startIndex + i] = name;
             }
         }
+
         return names;
     };
 
@@ -411,7 +413,7 @@ module.exports = class Probel {
                     break;
                 case 234:
                     //Handle Source Names Response (8 chars per name)
-                    const newSourceNamesExt = this.parseNamesExt(dataBytes);
+                    const newSourceNamesExt = this.parseNamesExt(dataBytes, true);
                     if (newSourceNamesExt) {
                         response = { ...this.sourceNames, ...newSourceNamesExt };
                         this.sourceNames = response;
@@ -437,12 +439,39 @@ module.exports = class Probel {
                     }
                     break;
                 case 107:
-                case 235:
                     //Handle Destination Names Response (8 chars per name)
                     const newDestinationNames = this.parseNames(dataBytes);
                     if (newDestinationNames) {
                         response = merge(this.destinationNames, newDestinationNames);
                         this.destinationNames = response;
+                    }
+
+                    if (
+                        parseInt(Object.keys(newDestinationNames)[Object.keys(newDestinationNames).length - 1]) <
+                        this.destinations
+                    ) {
+                        response = false;
+                    } else {
+                        response = this.destinationNames;
+                    }
+                    break;
+                case 235:
+                    //Handle Destination Names Response (8 chars per name)
+                    const newDestinationNamesExt = this.parseNamesExt(dataBytes);
+                    if (newDestinationNamesExt) {
+                        response = merge(this.destinationNames, newDestinationNamesExt);
+                        this.destinationNames = response;
+                    }
+
+                    console.log(newDestinationNamesExt);
+
+                    if (
+                        parseInt(Object.keys(newDestinationNamesExt)[Object.keys(newDestinationNamesExt).length - 1]) <
+                        this.destinations
+                    ) {
+                        response = false;
+                    } else {
+                        response = this.destinationNames;
                     }
                     break;
                 case 22:
@@ -464,7 +493,6 @@ module.exports = class Probel {
                             ) < this.destinations ||
                             tallyLevel < this.levels - 1
                         ) {
-                            console.log("HERE");
                             response = false;
                         }
                     }
@@ -474,7 +502,6 @@ module.exports = class Probel {
                 case 4:
                     //Handle Tally Information
                     const newTally = this.parseTallies(dataBytes);
-                    console.log(newTally);
                     if (newTally) {
                         response = merge(this.tallies, newTally);
                         this.tallies = response;
