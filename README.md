@@ -33,13 +33,13 @@ Additionl notes on specific commands implemented in Ross Ultrix matrix can be se
 ## Importing
 
 ```js
-const Probel = require("../index");
+const Probel = require("probel-swp-08");
 ```
 
 ## Making a route
 
 ```js
-const Probel = require("../index");
+const Probel = require("probel-swp-08");
 
 const port = 8910;
 const host = "IP_ADDRESS_OF_ROUTER";
