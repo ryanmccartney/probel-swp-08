@@ -26,3 +26,35 @@ Additionl notes on specific commands implemented in Ross Ultrix matrix can be se
 
 -   Santising label information
 -   UMD label commands
+
+# Usage
+
+## Importing
+
+```js
+const Probel = require("../index");
+```
+
+## Making a route
+
+```js
+const Probel = require("../index");
+
+const port = 8910;
+const host = "IP_ADDRESS_OF_ROUTER";
+
+const sourceTotal = 1024;
+const destinationTotal = 1024;
+const levelTotal = 17;
+
+const probel = new Probel(host, port, sourceTotal, destinationTotal, levelTotal);
+
+//Turn on debug mode so we can see what's being sent and received in bytes
+probel.debug = true;
+
+//Make a single crosspoint Probel.route(DESTINATION_LEVEL_NUMBER,SOURCE_NUMBER, DESTINATION_NUMBER)
+probel.route(5, 16, 16);
+
+//'Married Route' route all levels of one source to a destination Probel.routeAllLevels(SOURCE_NUMBER, DESTINATION_NUMBER)
+probel.routeAllLevels(10, 10);
+```
