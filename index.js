@@ -8,7 +8,7 @@ const { mod, div, chk, matrixLevelByte, multiplier, message, ackMessage, nakMess
 const merge = require("./utils/merge");
 const EventEmitter = require("events");
 
-const charLengthLookup = [4, 8, 12];
+const charLengthLookup = [4, 8, 12, 16, 32];
 
 const interrogateMessage = (destinationNumber, levelNumber = 0, matrixNumber = 0) => {
     const commandNumber = 1;
@@ -42,24 +42,6 @@ const getMessages = (data) => {
         messages.push(data.slice(somIndexes[i] + 2, eomIndexed[i]));
     }
     return messages;
-};
-
-const nameCharByte = (nameChars = 8) => {
-    const byte = Buffer.alloc(1);
-
-    if (nameChars === 4) {
-        byte.writeUInt8(0, 0);
-    }
-
-    if (nameChars === 8) {
-        byte.writeUInt8(1, 0);
-    }
-
-    if (nameChars === 12) {
-        byte.writeUInt8(2, 0);
-    }
-
-    return byte;
 };
 
 const crosspointMessage = (levelNumber, sourceNumber, destinationNumber, matrixNumber = 0) => {
@@ -104,7 +86,10 @@ const sourceNamesRequest = (extended = false, matrix = 0, chars = 12) => {
         const matrixByte = Buffer.alloc(1);
         matrixByte.writeUInt8(matrix, 0);
 
-        array = [matrixByte, Buffer.alloc(1), nameCharByte(chars)];
+        const charLengthByte = Buffer.alloc(1);
+        charLengthByte.writeUInt8(charLengthLookup.indexOf(chars, 0), 0);
+
+        array = [matrixByte, charLengthByte];
     } else {
         array = [charBytes];
     }
@@ -143,7 +128,10 @@ const destinationNamesRequest = (extended = false, matrix = 0, chars = 8) => {
         const matrixByte = Buffer.alloc(1);
         matrixByte.writeUInt8(matrix, 0);
 
-        array = [matrixByte, nameCharByte(chars)];
+        const charLengthByte = Buffer.alloc(1);
+        charLengthByte.writeUInt8(charLengthLookup.indexOf(chars, 0), 0);
+
+        array = [matrixByte, charLengthByte];
     } else {
         array = [charBytes];
     }
@@ -171,7 +159,7 @@ const isAck = (response) => {
 };
 
 module.exports = class Probel {
-    constructor(host, port, sources = 0, destinations = 0, levels = 17, matrix = 1, chars = 8) {
+    constructor(host, port, sources = 0, destinations = 0, levels = 17, matrix = 1, chars = 32) {
         this.debug = false;
         this.extended = false;
         this.connected = false;
@@ -288,6 +276,8 @@ module.exports = class Probel {
         // Log bytes recieved from the router when in debug mode
         this.log(`Rx (${reply.length}): ${reply.toString("hex")}`);
 
+        this.log(reply.toString());
+
         if (isAck(reply)) {
         } else {
             const messages = getMessages(reply);
@@ -326,18 +316,16 @@ module.exports = class Probel {
     };
 
     parseNamesExt = (data, sourceNames = false) => {
-        const matrixInfo = matrixLevelByte.decode(data[1]);
-        const charLength = 8;
-        charLengthLookup[data[2]];
-        let startIndex = 256 * data[3] + data[4] + 1;
-        if (!sourceNames) {
-            startIndex = 256 * data[2] + data[3] + 1;
-        }
-        const nameCount = data[5];
+        const matrixInfo = matrixLevelByte.decode(data[0]);
+        const charLength = charLengthLookup[data[1]];
 
+        const startIndex = 256 * data[2] + data[3] + 1;
+
+        const nameCount = data[4];
+        console.log(nameCount);
         const names = {};
 
-        //Some unexplained changing of bit positions based on the number of labels in  a message
+        //Some unexplained changing of bit positions based on the number of labels in a message
         let startPosition = 5;
         if (sourceNames) {
             startPosition = 6;
@@ -356,6 +344,7 @@ module.exports = class Probel {
             }
         }
 
+        console.log(names);
         return names;
     };
 
