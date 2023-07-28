@@ -1,5 +1,5 @@
 //NAME: div.js
-//AUTH: Ryan McCartney (rmccartney856@gmail.com)
+//AUTH: Ryan McCartney (ryan@mccartney.info)
 //DESC: x DIV y= the integer (z) which is produced when `x' is divided by `y' and the digits after the decimal point are discarded.
 //DATE: 07/03/2022
 

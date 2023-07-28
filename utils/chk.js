@@ -1,5 +1,5 @@
 //NAME: chk.js
-//AUTH: Ryan McCartney (rmccartney856@gmail.com)
+//AUTH: Ryan McCartney (ryan@mccartney.info)
 //DESC: CHK - 1 Byte Checksum of DATA and BTC based on 2's compliment
 //DATE: 07/03/2022
 

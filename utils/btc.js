@@ -1,5 +1,5 @@
 //NAME: btc.js
-//AUTH: Ryan McCartney (rmccartney856@gmail.com)
+//AUTH: Ryan McCartney (ryan@mccartney.info)
 //DESC: BTC - Byte Count for the data section of the message
 //DATE: 07/03/2022
 

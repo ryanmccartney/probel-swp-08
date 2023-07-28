@@ -1,5 +1,5 @@
 //NAME: message.js
-//AUTH: Ryan McCartney (rmccartney856@gmail.com)
+//AUTH: Ryan McCartney (ryan@mccartney.info)
 //DESC: Takes a command number and asscoicated data in a buffer as defined by SW-P-88 and converts it to a message
 //DATE: 07/03/2022
 

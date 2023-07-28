@@ -1,5 +1,5 @@
 //NAME: index.js
-//AUTH: Ryan McCartney (rmccartney856@gmail.com)
+//AUTH: Ryan McCartney (ryan@mccartney.info)
 //DESC: Main class for the Probel SW-P-08 client
 //DATE: 07/03/2022
 
@@ -10,12 +10,28 @@ const EventEmitter = require("events");
 
 const charLengthLookup = [4, 8, 12, 16, 32];
 
-const interrogateMessage = (destinationNumber, levelNumber = 0, matrixNumber = 0) => {
-    const commandNumber = 1;
-    const multiplierNumber = multiplier(destinationNumber, 0);
-    const destNumber = mod(destinationNumber, 128);
+const interrogateMessage = (destinationNumber, levelNumber = 0, matrixNumber = 0, extended = false) => {
+    let commandNumber = 1;
+    let array = [];
 
-    const array = [matrixLevelByte.encode(matrixNumber, levelNumber), multiplierNumber, destNumber];
+    if (extended) {
+        commandNumber = 129;
+        const destNumberDiv = div(destinationNumber, 256);
+        const destNumberMod = mod(destinationNumber, 256);
+
+        const levelByte = Buffer.alloc(1);
+        levelByte.writeUInt8(levelNumber, 0);
+
+        const matrixByte = Buffer.alloc(1);
+        matrixByte.writeUInt8(matrixNumber, 0);
+
+        array = [matrixByte, levelByte, destNumberDiv, destNumberMod];
+    } else {
+        const multiplierNumber = multiplier(destinationNumber, 0);
+        const destNumber = mod(destinationNumber, 128);
+        array = [matrixLevelByte.encode(matrixNumber, levelNumber), multiplierNumber, destNumber];
+    }
+
     const data = Buffer.concat(array);
     return message(commandNumber, data);
 };
@@ -144,12 +160,23 @@ const destinationNamesRequest = (extended = false, matrix = 0, chars = 8) => {
     return message(commandNumber, data);
 };
 
-const tallyStateRequest = (level = 0, matrix = 0) => {
+const tallyStateRequest = (level = 0, matrix = 0, extended = false) => {
     let commandNumber = 21;
-    if (this.extended) {
+    let array = [];
+    if (extended) {
         commandNumber = 149;
+        const matrixByte = Buffer.alloc(1);
+        matrixByte.writeUInt8(matrix, 0);
+
+        const levelByte = Buffer.alloc(1);
+        levelByte.writeUInt8(level, 0);
+
+        array = [matrixByte, levelByte];
+    } else {
+        array = [matrixLevelByte.encode(matrix, level)];
     }
-    return message(commandNumber, matrixLevelByte.encode(matrix, level));
+
+    return message(commandNumber, Buffer.concat(array));
 };
 
 const isAck = (response) => {
@@ -395,6 +422,46 @@ module.exports = class Probel {
         return tallies;
     };
 
+    parseTallyExt = (data) => {
+        const matrixNumber = data[0];
+        const levelNumber = data[1];
+
+        //Create Object Structure
+        const tallies = {};
+        tallies[matrixNumber] = {};
+        tallies[matrixNumber][levelNumber] = {};
+
+        const destination = data[2] * 256 + data[3];
+        const source = data[4] * 256 + data[5];
+
+        tallies[matrixNumber][levelNumber][destination] = source;
+
+        return tallies;
+    };
+
+    parseTalliesExt = (data) => {
+        const matrixNumber = data[0];
+        const levelNumber = data[1] + 1;
+        const sourceBytes = data.slice(5, Buffer.byteLength(data));
+
+        //Create Object Structure
+        const tallies = {};
+        tallies[matrixNumber] = {};
+        tallies[matrixNumber][levelNumber] = {};
+
+        const tallyCount = data[2];
+        const startDestination = 256 * data[3] + data[4] + 1;
+
+        //Populte with tally data
+        for (let i = 0; i < tallyCount; i++) {
+            const tally = sourceBytes.slice(i * 2, i * 2 + 2);
+            const source = tally[0] * 256 + tally[1];
+            const destination = startDestination + i;
+            tallies[matrixNumber][levelNumber][destination] = source;
+        }
+        return tallies;
+    };
+
     processData = (data) => {
         if (data.length > 0) {
             let response;
@@ -494,7 +561,6 @@ module.exports = class Probel {
                     break;
                 case 22:
                 case 23:
-                case 151:
                     const newTallies = this.parseTallies(dataBytes);
                     if (newTallies) {
                         response = merge(this.tallies, newTallies);
@@ -526,6 +592,35 @@ module.exports = class Probel {
                     }
                     break;
                 case 131:
+                    //Handle Tally Information for Single Extended Destination
+                    const newTallyExt = this.parseTallyExt(dataBytes);
+                    if (newTallyExt) {
+                        this.tallies = merge(this.tallies, newTallyExt);
+                        response = newTallyExt;
+                    }
+                    break;
+                case 151:
+                    //Handle Tally Dump Information Extended
+                    const newTalliesExt = this.parseTalliesExt(dataBytes);
+                    if (newTalliesExt) {
+                        response = merge(this.tallies, newTalliesExt);
+                        this.tallies = response;
+
+                        const tallyMatrix = Object.keys(newTalliesExt)[0];
+                        const tallyLevel = Object.keys(newTalliesExt[tallyMatrix])[0];
+
+                        if (
+                            parseInt(
+                                Object.keys(newTalliesExt[tallyMatrix][tallyLevel])[
+                                    Object.keys(newTalliesExt[tallyMatrix][tallyLevel]).length - 1
+                                ]
+                            ) < this.destinations ||
+                            tallyLevel < this.levels - 1
+                        ) {
+                            response = false;
+                        }
+                    }
+                    break;
                 case 132:
                     //Handle Crosspoint Response
                     this.log("Extended Crosspoint Made");
@@ -538,7 +633,12 @@ module.exports = class Probel {
 
     //Interrogate a single crosspoint (destinationNumber, levelNumber, matrixNumber)
     interrogate = async (destinationNumber, levelNumber, matrixNumber) => {
-        const buffer = interrogateMessage(destinationNumber, levelNumber, matrixNumber);
+        let buffer;
+        if (this.extended) {
+            buffer = interrogateMessage(destinationNumber, levelNumber, matrixNumber, true);
+        } else {
+            buffer = interrogateMessage(destinationNumber, levelNumber, matrixNumber);
+        }
         this.send(buffer);
         return await this.waitForCommand(["3", "131"]);
     };
@@ -582,9 +682,9 @@ module.exports = class Probel {
 
     getState = async () => {
         for (let level = 0; level < this.levels; level++) {
-            const buffer = tallyStateRequest(level);
+            const buffer = tallyStateRequest(level, this.matrix - 1, this.extended);
             this.send(buffer);
         }
-        return await this.waitForCommand(["22", "23"]);
+        return await this.waitForCommand(["22", "23", "151"]);
     };
 };

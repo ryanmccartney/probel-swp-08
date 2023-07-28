@@ -1,5 +1,5 @@
 //NAME: matrixLevelByte.js
-//AUTH: Ryan McCartney (rmccartney856@gmail.com)
+//AUTH: Ryan McCartney (ryan@mccartney.info)
 //DESC: Helper fucntion creating the Matrix and level bytes for SW-P-88 messages
 //DATE: 07/03/2022
 

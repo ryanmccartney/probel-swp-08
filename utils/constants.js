@@ -1,5 +1,5 @@
 //NAME: constants.js
-//AUTH: Ryan McCartney (rmccartney856@gmail.com)
+//AUTH: Ryan McCartney (ryan@mccartney.info)
 //DESC: Constants for the Probel SW-P-88
 //DATE: 07/03/2022
 

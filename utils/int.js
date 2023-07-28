@@ -1,5 +1,5 @@
 //NAME: int.js
-//AUTH: Ryan McCartney (rmccartney856@gmail.com)
+//AUTH: Ryan McCartney (ryan@mccartney.info)
 //DESC: INT x = the integer which is produced when the digits of `x' after the decimal points are discarded.
 //DATE: 07/03/2022
 

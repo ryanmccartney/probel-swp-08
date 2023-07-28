@@ -1,5 +1,5 @@
 //NAME: merge.js
-//AUTH: Ryan McCartney (rmccartney856@gmail.com)
+//AUTH: Ryan McCartney (ryan@mccartney.info)
 //DESC: Deep merge of two objects
 //DATE: 07/03/2022
 
