@@ -13,7 +13,7 @@ const pack = (data) => {
     const array = [constant.som(), data, btc(data), chk(Buffer.concat([data, btc(data)])), constant.eom()];
     const packed = [];
 
-    //GTOCHA - Replace byte value 10 (DLE) in data with 1010
+    //GOTCHA - Replace byte value 10 (DLE) in data with 1010
     for (let byte of data.entries()) {
         packed.push(data.slice(byte[0], byte[0] + 1));
         if (byte[1] === 16) {

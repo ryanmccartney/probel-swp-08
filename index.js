@@ -76,7 +76,7 @@ const crosspointMessageExtended = (levelNumber, sourceNumber, destinationNumber,
     return message(commandNumber, data, true);
 };
 
-const sourceNamesRequest = (extended = false, matrix = 0, chars = 12) => {
+const sourceNamesRequest = (extended = false, matrix = 0, level = 0, chars = 12) => {
     let commandNumber = 100;
     let array = [];
 
@@ -89,7 +89,10 @@ const sourceNamesRequest = (extended = false, matrix = 0, chars = 12) => {
         const matrixByte = Buffer.alloc(1);
         matrixByte.writeUInt8(matrix, 0);
 
-        array = [matrixByte, charLengthByte];
+        const levelByte = Buffer.alloc(1);
+        levelByte.writeUInt8(level, 0);
+
+        array = [matrixByte, levelByte, charLengthByte];
     } else {
         array = [charLengthByte];
     }
@@ -190,7 +193,7 @@ module.exports = class Probel {
         }
     };
 
-    waitForCommand = (commandNumbers, timeout = 5000) => {
+    waitForCommand = (commandNumbers, timeout = 10000) => {
         return new Promise((resolve, reject) => {
             // Set up the timeout
             const timer = setTimeout(() => {
@@ -312,38 +315,40 @@ module.exports = class Probel {
                 names[startIndex + i] = name;
             }
         }
+
         return names;
     };
 
     parseNamesExt = (data, sourceNames = false) => {
-        const matrixInfo = matrixLevelByte.decode(data[0]);
-        const charLength = charLengthLookup[data[1]];
-
-        const startIndex = 256 * data[3] + data[4] + 1;
-
-        const nameCount = data[5];
-        const names = {};
-
-        //Some unexplained changing of bit positions based on the number of labels in a message
+        //Packing for Extended Destinations
+        let matrixNumber = data[0];
+        let levelNumber = 0;
+        let charLength = charLengthLookup[data[1]];
+        let startIndex = 256 * data[2] + data[3] + 1;
+        let nameCount = data[4];
         let startPosition = 5;
+
+        //Packing for Extended Destinations
         if (sourceNames) {
-            startPosition = 6;
-        }
-        if (nameCount < 16 || startIndex === 0) {
+            levelNumber = data[1];
+            charLength = charLengthLookup[data[2]];
+            startIndex = 256 * data[3] + data[4] + 1;
+            nameCount = data[5];
             startPosition = 6;
         }
 
+        const names = {};
         let namesBytes = data.slice(startPosition, Buffer.byteLength(data));
 
         for (let i = 0; i < nameCount; i++) {
-            const nameBytes = namesBytes.slice(i * charLength, i * charLength + charLength);
+            const sliceIndex = i * charLength;
+            const nameBytes = namesBytes.slice(sliceIndex, sliceIndex + charLength);
             const name = nameBytes.toString().trim();
             if (name) {
                 names[startIndex + i] = name;
             }
         }
 
-        console.log(names);
         return names;
     };
 
@@ -558,7 +563,7 @@ module.exports = class Probel {
     };
 
     getSourceNames = async () => {
-        const buffer = sourceNamesRequest(this.extended, this.matrix - 1, this.chars);
+        const buffer = sourceNamesRequest(this.extended, this.matrix - 1, 0, this.chars);
         this.send(buffer);
         return await this.waitForCommand(["106", "234"]);
     };
