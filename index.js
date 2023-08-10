@@ -179,6 +179,33 @@ const tallyStateRequest = (level = 0, matrix = 0, extended = false) => {
     return message(commandNumber, Buffer.concat(array));
 };
 
+const setLabelRequest = (matrix = 0, level = 0, number = 0, label) => {
+    let commandNumber = 117;
+
+    const nameTypeByte = Buffer.alloc(1);
+    nameTypeByte.writeUInt8(3, 0);
+
+    const nameLengthByte = Buffer.alloc(1);
+    nameLengthByte.writeUInt8(1, 0);
+
+    const matrixByte = Buffer.alloc(1);
+    matrixByte.writeUInt8(matrix, 0);
+
+    const levelByte = Buffer.alloc(1);
+    levelByte.writeUInt8(level, 0);
+
+    const nameBytes = Buffer.from(label, "ascii");
+
+    const array = [nameTypeByte, nameLengthByte, matrixByte, levelByte, div(number, 256), mod(number, 256), nameBytes];
+
+    //10027500040000000041424344454647480f541003
+
+    // SOM  CMD  TYPE  CHARS  MAT  LEV  NUM  NUM
+    // 1002 75   00    04     00   00   00   00   41 42 43 44 45 46 47 48 0f 54 1003
+
+    return message(commandNumber, Buffer.concat(array));
+};
+
 const isAck = (response) => {
     if (!Buffer.compare(response, ackMessage())) {
         return true;
@@ -189,22 +216,23 @@ const isAck = (response) => {
 };
 
 module.exports = class Probel {
-    constructor(host, port, sources = 0, destinations = 0, levels = 17, matrix = 1, chars = 32) {
+    constructor(host, config) {
         this.debug = false;
-        this.extended = false;
+        this.extended = config?.extended || true;
         this.connected = false;
         this.host = host;
-        this.port = port;
-        this.sources = sources;
-        this.destinations = destinations;
-        this.levels = levels;
-        this.matrix = matrix;
-        this.chars = chars;
+        this.port = config.port || 8910;
+        this.sources = config?.sources || 0;
+        this.destinations = config?.destinations || 0;
+        this.levels = config?.levels || 17;
+        this.matrix = config?.matrix || 1;
+        this.chars = config?.chars || 8;
         this.client;
         this.tallies = {};
         this.sourceNames = {};
         this.destinationNames = {};
         this.umdLabels = {};
+        this.callback = {};
         this.connect();
         this.events = new EventEmitter();
 
@@ -462,6 +490,14 @@ module.exports = class Probel {
         return tallies;
     };
 
+    on = (event = "crosspoint", callback) => {
+        if (callback) {
+            if (event === "crosspoint") {
+                this.callback[event] = callback;
+            }
+        }
+    };
+
     processData = (data) => {
         if (data.length > 0) {
             let response;
@@ -686,5 +722,11 @@ module.exports = class Probel {
             this.send(buffer);
         }
         return await this.waitForCommand(["22", "23", "151"]);
+    };
+
+    setSourceLabel = (levelNumber, srcNumber, newLabel) => {
+        const buffer = setLabelRequest(this.matrix - 1, levelNumber, srcNumber, newLabel);
+        this.send(buffer);
+        return newLabel;
     };
 };

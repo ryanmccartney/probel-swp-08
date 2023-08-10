@@ -7,7 +7,15 @@ const sourceTotal = 1329;
 const destinationTotal = 188;
 const levelTotal = 17;
 
-const probel = new Probel(host, port, sourceTotal, destinationTotal, levelTotal);
+//Example config object
+const config = {
+    port: port,
+    destinations: destinationTotal,
+    sources: sourceTotal,
+    levels: levelTotal,
+};
+
+const probel = new Probel(host, config);
 
 //Turn on debug mode so we can see what's being sent and received in bytes
 probel.debug = true;

@@ -1,6 +1,6 @@
 {
   "name": "probel-swp-08",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "JavaScript Implementation of the Pro Bel Switching Protocol",
   "keywords": [
     "probel",
@@ -22,7 +22,9 @@
   "scripts": {
     "example-interogate": "nodemon ./examples/example-interogate.js",
     "example-labels": "nodemon ./examples/example-labels.js",
-    "example-route": "nodemon ./examples/example-route.js"
+    "example-route": "nodemon ./examples/example-route.js",
+    "example-rename": "nodemon ./examples/example-rename.js",
+    "example-event": "nodemon ./examples/example-event.js"
   },
   "author": "Ryan McCartney",
   "license": "MIT",

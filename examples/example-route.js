@@ -1,13 +1,9 @@
-const Probel = require("../index");
+const Probel = require("./../index");
 
 const port = 8910;
-const host = "192.168.0.1";
+const host = "172.26.108.80";
 
-const sourceTotal = 1559;
-const destinationTotal = 1559;
-const levelTotal = 17;
-
-const probel = new Probel(host, port, sourceTotal, destinationTotal, levelTotal);
+const probel = new Probel(host, { port: port });
 
 //Turn on debug mode so we can see what's being sent and received in bytes
 probel.debug = true;
