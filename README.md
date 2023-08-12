@@ -41,14 +41,18 @@ const Probel = require("probel-swp-08");
 ```js
 const Probel = require("probel-swp-08");
 
-const port = 8910;
 const host = "IP_ADDRESS_OF_ROUTER";
 
-const sourceTotal = 1024;
-const destinationTotal = 1024;
-const levelTotal = 17;
+//Example config object
+const config = {
+    port: 8910,
+    destinations: destinationTotal,
+    sources: sourceTotal,
+    extended: true,
+    levels: levelTotal,
+};
 
-const probel = new Probel(host, port, sourceTotal, destinationTotal, levelTotal);
+const probel = new Probel(host, config);
 
 //Turn on debug mode so we can see what's being sent and received in bytes
 probel.debug = true;
