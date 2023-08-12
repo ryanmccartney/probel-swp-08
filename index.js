@@ -179,33 +179,6 @@ const tallyStateRequest = (level = 0, matrix = 0, extended = false) => {
     return message(commandNumber, Buffer.concat(array));
 };
 
-const setLabelRequest = (matrix = 0, level = 0, number = 0, label) => {
-    let commandNumber = 117;
-
-    const nameTypeByte = Buffer.alloc(1);
-    nameTypeByte.writeUInt8(3, 0);
-
-    const nameLengthByte = Buffer.alloc(1);
-    nameLengthByte.writeUInt8(1, 0);
-
-    const matrixByte = Buffer.alloc(1);
-    matrixByte.writeUInt8(matrix, 0);
-
-    const levelByte = Buffer.alloc(1);
-    levelByte.writeUInt8(level, 0);
-
-    const nameBytes = Buffer.from(label, "ascii");
-
-    const array = [nameTypeByte, nameLengthByte, matrixByte, levelByte, div(number, 256), mod(number, 256), nameBytes];
-
-    //10027500040000000041424344454647480f541003
-
-    // SOM  CMD  TYPE  CHARS  MAT  LEV  NUM  NUM
-    // 1002 75   00    04     00   00   00   00   41 42 43 44 45 46 47 48 0f 54 1003
-
-    return message(commandNumber, Buffer.concat(array));
-};
-
 const isAck = (response) => {
     if (!Buffer.compare(response, ackMessage())) {
         return true;
@@ -236,7 +209,7 @@ module.exports = class Probel {
         this.connect();
         this.events = new EventEmitter();
 
-        if (levels > 16 || sources > 1024 || destinations > 1024) {
+        if (this.levels > 16 || this.sources > 1024 || this.destinations > 1024) {
             this.log("Probel: using extended commands");
             this.extended = true;
         }
@@ -544,7 +517,8 @@ module.exports = class Probel {
 
                     if (
                         parseInt(Object.keys(newSourceNamesExt)[Object.keys(newSourceNamesExt).length - 1]) <
-                        this.sources
+                            this.sources &&
+                        this.sources !== 0
                     ) {
                         response = false;
                     } else {
@@ -722,11 +696,5 @@ module.exports = class Probel {
             this.send(buffer);
         }
         return await this.waitForCommand(["22", "23", "151"]);
-    };
-
-    setSourceLabel = (levelNumber, srcNumber, newLabel) => {
-        const buffer = setLabelRequest(this.matrix - 1, levelNumber, srcNumber, newLabel);
-        this.send(buffer);
-        return newLabel;
     };
 };

@@ -12,6 +12,7 @@ const config = {
     port: port,
     destinations: destinationTotal,
     sources: sourceTotal,
+    extended: true,
     levels: levelTotal,
 };
 
