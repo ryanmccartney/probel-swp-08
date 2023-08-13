@@ -410,8 +410,8 @@ module.exports = class Probel {
 
         //Create Object Structure
         const tallies = {};
-        tallies[matrixInfo.matrix] = {};
-        tallies[matrixInfo.matrix][matrixInfo.level] = {};
+        tallies[matrixInfo.matrix + 1] = {};
+        tallies[matrixInfo.matrix + 1][matrixInfo.level + 1] = {};
 
         //Populte with tally data
         for (let i = 0; i < tallyCount; i++) {
@@ -424,8 +424,8 @@ module.exports = class Probel {
     };
 
     parseTallyExt = (data) => {
-        const matrixNumber = data[0];
-        const levelNumber = data[1];
+        const matrixNumber = data[0] + 1;
+        const levelNumber = data[1] + 1;
 
         //Create Object Structure
         const tallies = {};
@@ -441,7 +441,7 @@ module.exports = class Probel {
     };
 
     parseTalliesExt = (data) => {
-        const matrixNumber = data[0];
+        const matrixNumber = data[0] + 1;
         const levelNumber = data[1] + 1;
         const sourceBytes = data.slice(5, Buffer.byteLength(data));
 
