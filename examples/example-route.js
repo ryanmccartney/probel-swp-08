@@ -2,8 +2,16 @@ const Probel = require("./../index");
 
 const port = 8910;
 const host = "172.26.108.80";
+const levelTotal = 17;
 
-const probel = new Probel(host, { port: port });
+//Example config object
+const config = {
+    port: port,
+    extended: true,
+    levels: levelTotal,
+};
+
+const probel = new Probel(config, { port: port });
 
 //Turn on debug mode so we can see what's being sent and received in bytes
 probel.debug = true;

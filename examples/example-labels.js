@@ -2,16 +2,11 @@ const Probel = require("./../index");
 
 const port = 8910;
 const host = "172.26.108.80";
-
-const sourceTotal = 1329;
-const destinationTotal = 188;
 const levelTotal = 17;
 
 //Example config object
 const config = {
     port: port,
-    destinations: destinationTotal,
-    sources: sourceTotal,
     extended: true,
     levels: levelTotal,
 };

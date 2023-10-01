@@ -213,6 +213,14 @@ module.exports = class Probel {
             this.log("Probel: using extended commands");
             this.extended = true;
         }
+
+        // Run get labels commands on the matrix to detect matrix size
+        if (this.destinations === 0) {
+            this.getDestinationNames();
+        }
+        if (this.sources === 0) {
+            this.getSourceNames();
+        }
     }
 
     log = (message) => {
@@ -221,7 +229,7 @@ module.exports = class Probel {
         }
     };
 
-    waitForCommand = (commandNumbers, timeout = 10000) => {
+    waitForCommand = (commandNumbers, timeout = 30000) => {
         return new Promise((resolve, reject) => {
             // Set up the timeout
             const timer = setTimeout(() => {
@@ -460,6 +468,7 @@ module.exports = class Probel {
             const destination = startDestination + i;
             tallies[matrixNumber][levelNumber][destination] = source;
         }
+
         return tallies;
     };
 
@@ -493,14 +502,25 @@ module.exports = class Probel {
 
             switch (commandNumber) {
                 case 106:
-                    //Handle Source Names Response (4-32 chars per name)
+                    //Handle source name response (4-32 chars per name)
                     const newSourceNames = this.parseNames(dataBytes);
+
+                    //Detect if matrix size needs changed
+                    const newSourceNumbers = Object.keys(newSourceNames);
+                    const maxSourceNumber = parseInt(newSourceNumbers[newSourceNumbers.length - 1]);
+                    if (maxSourceNumber > this.sources) {
+                        this.log(`Matrix source size updated to ${maxSourceNumber}`);
+                        this.sources = maxSourceNumber;
+                    }
+
+                    //Concatenate source names in message to object
                     if (newSourceNames) {
                         response = { ...this.sourceNames, ...newSourceNames };
                         this.sourceNames = response;
                     }
 
-                    if (parseInt(Object.keys(newSourceNames)[Object.keys(newSourceNames).length - 1]) < this.sources) {
+                    //Check if all the source names in the matrix have been received
+                    if (newSourceNumbers <= this.sources && this.sources !== 0) {
                         response = false;
                     } else {
                         response = this.sourceNames;
@@ -508,18 +528,27 @@ module.exports = class Probel {
 
                     break;
                 case 234:
-                    //Handle Source Names Response (4-32 chars per name)
+                    //Handle source names response (4-32 chars per name)
                     const newSourceNamesExt = this.parseNamesExt(dataBytes, true);
+
+                    //Detect if matrix size needs changed
+                    const newSourceNumbersExt = Object.keys(newSourceNamesExt);
+                    const maxSourceNumberExt = parseInt(newSourceNumbersExt[newSourceNumbersExt.length - 1]);
+
+                    if (maxSourceNumberExt > this.sources) {
+                        console.log("HERE");
+                        this.log(`Matrix source size updated to ${maxSourceNumberExt}`);
+                        this.sources = maxSourceNumberExt;
+                    }
+
+                    //Concatenate source names in message to object
                     if (newSourceNamesExt) {
                         response = { ...this.sourceNames, ...newSourceNamesExt };
                         this.sourceNames = response;
                     }
 
-                    if (
-                        parseInt(Object.keys(newSourceNamesExt)[Object.keys(newSourceNamesExt).length - 1]) <
-                            this.sources &&
-                        this.sources !== 0
-                    ) {
+                    //Check if all the source names in the matrix have been received
+                    if (maxSourceNumberExt <= this.sources && this.sources !== 0) {
                         response = false;
                     } else {
                         response = this.sourceNames;
@@ -528,7 +557,7 @@ module.exports = class Probel {
                     break;
                 case 108:
                 case 236:
-                    //Handle Source Names UMD Response (16 chars per name)
+                    //Handle source names UMD response (16 chars per name)
                     const newUmdLabels = this.parseNames(dataBytes);
                     if (newUmdLabels) {
                         response = { ...this.umdLabels, ...newUmdLabels };
@@ -536,38 +565,58 @@ module.exports = class Probel {
                     }
                     break;
                 case 107:
-                    //Handle Destination Names Response (4-32 chars per name)
+                    //Handle destination names response (4-32 chars per name)
                     const newDestinationNames = this.parseNames(dataBytes);
+
+                    //Detect if matrix size needs changed
+                    const newDestinationNumbers = Object.keys(newDestinationNames);
+                    const maxDestinationNumber = parseInt(newDestinationNumbers[newDestinationNumbers.length - 1]);
+                    if (maxDestinationNumber > this.destinations) {
+                        this.log(`Matrix destination size updated to ${maxDestinationNumber}`);
+                        this.destinations = maxDestinationNumber;
+                    }
+
+                    //Concatenate destination names in message to object
                     if (newDestinationNames) {
                         response = merge(this.destinationNames, newDestinationNames);
                         this.destinationNames = response;
                     }
 
-                    if (
-                        parseInt(Object.keys(newDestinationNames)[Object.keys(newDestinationNames).length - 1]) <
-                        this.destinations
-                    ) {
+                    //Check if all the destination names in the matrix have been received
+                    if (maxDestinationNumber <= this.destinations && this.destinations !== 0) {
                         response = false;
                     } else {
                         response = this.destinationNames;
                     }
+
                     break;
                 case 235:
-                    //Handle Destination Names Response (4-32 chars per name)
+                    //Handle destination names response (4-32 chars per name)
                     const newDestinationNamesExt = this.parseNamesExt(dataBytes);
+
+                    //Detect if matrix size needs changed
+                    const newDestinationNumbersExt = Object.keys(newDestinationNamesExt);
+                    const maxDestinationNumberExt = parseInt(
+                        newDestinationNumbersExt[newDestinationNumbersExt.length - 1]
+                    );
+                    if (maxDestinationNumberExt > this.destinations) {
+                        this.log(`Matrix destination size updated to ${maxDestinationNumberExt}`);
+                        this.destinations = maxDestinationNumberExt;
+                    }
+
+                    //Concatenate destination names in message to object
                     if (newDestinationNamesExt) {
                         response = merge(this.destinationNames, newDestinationNamesExt);
                         this.destinationNames = response;
                     }
 
-                    if (
-                        parseInt(Object.keys(newDestinationNamesExt)[Object.keys(newDestinationNamesExt).length - 1]) <
-                        this.destinations
-                    ) {
+                    //Check if all the destination names in the matrix have been received
+                    if (maxDestinationNumberExt <= this.destinations && this.destinations !== 0) {
                         response = false;
                     } else {
                         response = this.destinationNames;
                     }
+
                     break;
                 case 22:
                 case 23:
@@ -590,7 +639,6 @@ module.exports = class Probel {
                             response = false;
                         }
                     }
-
                     break;
                 case 3:
                 case 4:
@@ -630,6 +678,7 @@ module.exports = class Probel {
                             response = false;
                         }
                     }
+
                     break;
                 case 132:
                     //Handle Crosspoint Response
