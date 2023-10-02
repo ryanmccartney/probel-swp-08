@@ -683,7 +683,9 @@ module.exports = class Probel {
                     //Handle Crosspoint Response
                     const crosspointData = this.parseTallyExt(dataBytes);
                     if (crosspointData) {
-                        this.callback.crosspoint(crosspointData);
+                        if (this.callback.crosspoint) {
+                            this.callback.crosspoint(crosspointData);
+                        }
                         response = true;
                     }
                     break;
