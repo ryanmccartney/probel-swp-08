@@ -672,7 +672,7 @@ module.exports = class Probel {
                                     Object.keys(newTalliesExt[tallyMatrix][tallyLevel]).length - 1
                                 ]
                             ) < this.destinations ||
-                            tallyLevel < this.levels - 1
+                            tallyLevel < this.levels
                         ) {
                             response = false;
                         }

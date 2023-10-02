@@ -11,7 +11,7 @@ const config = {
     levels: levelTotal,
 };
 
-const probel = new Probel(config, { port: port });
+const probel = new Probel(host, config);
 
 //Turn on debug mode so we can see what's being sent and received in bytes
 probel.debug = true;
@@ -22,7 +22,6 @@ const main = async () => {
 
     //Interogate the whole router
     state = await probel.getState();
-
     console.log(state);
 };
 
