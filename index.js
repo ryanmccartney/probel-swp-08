@@ -681,8 +681,11 @@ module.exports = class Probel {
                     break;
                 case 132:
                     //Handle Crosspoint Response
-                    this.log("Extended Crosspoint Made");
-                    response = true;
+                    const crosspointData = this.parseTallyExt(dataBytes);
+                    if (crosspointData) {
+                        this.callback.crosspoint(crosspointData);
+                        response = true;
+                    }
                     break;
             }
             this.events.emit(commandNumber, response);

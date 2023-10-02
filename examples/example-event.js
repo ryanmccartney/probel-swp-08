@@ -16,8 +16,6 @@ const callback = (data) => {
 const main = async () => {
     //Add a function that triggers whenver new crosspoint information is received from the router.
     state = await probel.on("crosspoint", callback);
-
-    console.log(state);
 };
 
 main();

@@ -11,10 +11,10 @@ const config = {
     levels: levelTotal,
 };
 
-const probel = new Probel(config, { port: port });
+const probel = new Probel(host, config);
 
 //Turn on debug mode so we can see what's being sent and received in bytes
-probel.debug = true;
+probel.debug = false;
 
 //Make a single crosspoint Probel.route(DESTINATION_LEVEL_NUMBER,SOURCE_NUMBER, DESTINATION_NUMBER)
 probel.route(5, 16, 16);
