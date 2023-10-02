@@ -23,7 +23,7 @@ Additionl notes on specific commands implemented in Ross Ultrix matrix can be se
 -   'Married' routing - routes all levels from one source to destination (1 video + 16 audio from source to destination)
 -   Asynchronous commands to router
 
-# Work in progres
+# Work in progress
 
 -   UMD label commands
 -   Confirm a route has been made (Only getting ACKs currently)

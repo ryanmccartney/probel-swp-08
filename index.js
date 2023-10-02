@@ -520,7 +520,7 @@ module.exports = class Probel {
                     }
 
                     //Check if all the source names in the matrix have been received
-                    if (newSourceNumbers <= this.sources && this.sources !== 0) {
+                    if (newSourceNumbers < this.sources || this.sources === 0) {
                         response = false;
                     } else {
                         response = this.sourceNames;
@@ -536,7 +536,6 @@ module.exports = class Probel {
                     const maxSourceNumberExt = parseInt(newSourceNumbersExt[newSourceNumbersExt.length - 1]);
 
                     if (maxSourceNumberExt > this.sources) {
-                        console.log("HERE");
                         this.log(`Matrix source size updated to ${maxSourceNumberExt}`);
                         this.sources = maxSourceNumberExt;
                     }
@@ -548,7 +547,7 @@ module.exports = class Probel {
                     }
 
                     //Check if all the source names in the matrix have been received
-                    if (maxSourceNumberExt <= this.sources && this.sources !== 0) {
+                    if (maxSourceNumberExt < this.sources || this.sources === 0) {
                         response = false;
                     } else {
                         response = this.sourceNames;
@@ -583,7 +582,7 @@ module.exports = class Probel {
                     }
 
                     //Check if all the destination names in the matrix have been received
-                    if (maxDestinationNumber <= this.destinations && this.destinations !== 0) {
+                    if (maxDestinationNumber < this.destinations || this.destinations === 0) {
                         response = false;
                     } else {
                         response = this.destinationNames;
@@ -611,7 +610,7 @@ module.exports = class Probel {
                     }
 
                     //Check if all the destination names in the matrix have been received
-                    if (maxDestinationNumberExt <= this.destinations && this.destinations !== 0) {
+                    if (maxDestinationNumberExt < this.destinations || this.destinations === 0) {
                         response = false;
                     } else {
                         response = this.destinationNames;

@@ -1,6 +1,6 @@
 {
   "name": "probel-swp-08",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "JavaScript Implementation of the Pro Bel Switching Protocol",
   "keywords": [
     "probel",
@@ -27,7 +27,9 @@
   },
   "author": "Ryan McCartney",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "delay": "^6.0.0"
+  },
   "devDependencies": {
     "nodemon": "^2.0.15"
   }
