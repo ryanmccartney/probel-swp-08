@@ -737,4 +737,15 @@ module.exports = class Probel {
         }
         return await this.waitForCommand(["22", "23", "151"]);
     };
+
+    getSize = async () => {
+        if (this.destinations === 0) {
+            await this.getDestinationNames();
+        }
+        if (this.sources === 0) {
+            await this.getSourceNames();
+        }
+
+        return { source: this.sources, destinations: this.destinations, levels: this.levels, extended: this.extended };
+    };
 };
