@@ -18,7 +18,8 @@ probel.debug = true;
 
 const main = async () => {
     //Interrogate a single crosspoint probel.interrogate(destinationNumber, levelNumber, matrixNumber)
-    //let state = await probel.interrogate(12, 1, 0);
+    let state = await probel.interrogate(12, 1, 0);
+    console.log(state);
 
     //Interogate the whole router
     state = await probel.getState();

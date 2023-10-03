@@ -208,6 +208,7 @@ module.exports = class Probel {
         this.callback = {};
         this.connect();
         this.events = new EventEmitter();
+        this.events.setMaxListeners(this.levels + 4);
 
         if (this.levels > 16 || this.sources > 1024 || this.destinations > 1024) {
             this.log("Probel: using extended commands");
@@ -229,7 +230,7 @@ module.exports = class Probel {
         }
     };
 
-    waitForCommand = (commandNumbers, timeout = 30000) => {
+    waitForCommand = (commandNumbers, timeout = 10000) => {
         return new Promise((resolve, reject) => {
             // Set up the timeout
             const timer = setTimeout(() => {
@@ -265,23 +266,6 @@ module.exports = class Probel {
         });
     };
 
-    waitForConnection = (timeout = 5000) => {
-        return new Promise((resolve, reject) => {
-            if (this.connected == true) {
-                resolve(true);
-            }
-            // Set up the timeout
-            const timer = setTimeout(() => {
-                resolve(false);
-            }, timeout);
-
-            this.events.on("connection", (data = true) => {
-                clearTimeout(timer);
-                resolve(data);
-            });
-        });
-    };
-
     connect = () => {
         this.client = new Net.Socket();
 
@@ -295,14 +279,16 @@ module.exports = class Probel {
 
         this.client.on("end", function () {
             this.connected = false;
-            this.events.emit("connection", false);
             this.log("Connection closed");
         });
     };
 
     send = async (message) => {
-        // Log bytes sent to router when in debug mode
-        const connected = await this.waitForConnection();
+        let connected = this.connected;
+        if (!connected) {
+            connected = await this.waitForCommand("connection");
+        }
+
         if (connected) {
             this.log(`Tx (${message.length}): ${message.toString("hex")}`);
             this.client.write(message);
@@ -318,14 +304,14 @@ module.exports = class Probel {
         this.log(reply.toString());
 
         if (isAck(reply)) {
+            this.events.emit("ack", true);
         } else {
             const messages = getMessages(reply);
             for (let message of messages) {
                 this.processData(message);
             }
+            this.send(ackMessage());
         }
-
-        this.send(ackMessage());
     };
 
     parseNames = (data) => {
@@ -499,7 +485,6 @@ module.exports = class Probel {
             //     this.log("Byte Count doesn't match message contents.");
             //     return false;
             // }
-
             switch (commandNumber) {
                 case 106:
                     //Handle source name response (4-32 chars per name)
@@ -707,7 +692,7 @@ module.exports = class Probel {
     };
 
     //Route a source to a destination at a specified level only (1 to 17)
-    route = (levelNumber, srcNumber, destNumber) => {
+    route = async (levelNumber, srcNumber, destNumber) => {
         let buffer;
         if (this.extended) {
             buffer = crosspointMessageExtended(levelNumber - 1, srcNumber - 1, destNumber - 1, this.matrix - 1);
@@ -715,14 +700,16 @@ module.exports = class Probel {
             buffer = crosspointMessage(levelNumber - 1, srcNumber - 1, destNumber - 1, this.matrix - 1);
         }
         this.send(buffer);
+        return await this.waitForCommand(["ack"]);
     };
 
     //Route all the levels from a given source to a given destination (1 to 17)
     routeAllLevels = async (srcNumber, destNumber) => {
+        let status = true;
         for (let level = 1; level <= this.levels; level++) {
-            this.route(level, srcNumber, destNumber);
-            return await this.waitForCommand(["3", "4"]);
+            status &= await this.route(level, srcNumber, destNumber);
         }
+        return status;
     };
 
     getSourceNames = async () => {

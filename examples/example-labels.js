@@ -13,7 +13,7 @@ const config = {
 const probel = new Probel(host, config);
 
 //Turn on debug mode so we can see what's being sent and received in bytes
-probel.debug = false;
+probel.debug = true;
 
 const main = async () => {
     await probel.getState();
