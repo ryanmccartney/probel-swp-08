@@ -206,7 +206,6 @@ module.exports = class Probel {
         this.destinationNames = {};
         this.umdLabels = {};
         this.callback = {};
-        this.connect();
         this.events = new EventEmitter();
         this.events.setMaxListeners(this.levels + 4);
 
@@ -214,6 +213,8 @@ module.exports = class Probel {
             this.log("Probel: using extended commands");
             this.extended = true;
         }
+
+        this.connect();
 
         // Run get labels commands on the matrix to detect matrix size
         if (this.destinations === 0) {
@@ -267,20 +268,34 @@ module.exports = class Probel {
     };
 
     connect = () => {
+        const port = this.port;
+        const host = this.host;
+        const log = this.log;
         this.client = new Net.Socket();
 
-        this.client.connect({ port: this.port, host: this.host }, () => {
-            this.log("Connection established with the Probel SW-P-08 server.");
-            this.connected = true;
-            this.events.emit("connection", true);
-        });
+        try {
+            this.client.connect({ port: port, host: host }, () => {
+                this.log("Connection established with the Probel SW-P-08 server.");
+                this.connected = true;
+                this.events.emit("connection", true);
+            });
 
-        this.client.on("data", this.handleData);
+            this.client.on("data", this.handleData);
 
-        this.client.on("end", function () {
-            this.connected = false;
-            this.log("Connection closed");
-        });
+            this.client.on("end", function () {
+                this.connected = false;
+                this.log("Connection closed");
+            });
+
+            this.client.on("error", function () {
+                this.connected = false;
+                log(`Unable to connect to matrix at ${host}:${port}`);
+            });
+        } catch (error) {
+            this.events.emit("connection", false);
+            this.log(`Unable to connect to matrix at ${host}:${port}`);
+            this.log(error);
+        }
     };
 
     send = async (message) => {
