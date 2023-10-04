@@ -79,3 +79,13 @@ const main = async () => {
 
 main();
 ```
+
+## Client Usage
+
+`node ./examples/example-cli --source=1 --destination=3`
+
+Response
+
+```js
+Routed all levels of a source #1 to destination #3
+```

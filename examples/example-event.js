@@ -1,7 +1,7 @@
 const Probel = require("../index");
 
 const port = 8910;
-const host = "172.26.108.80";
+const host = "192.168.x.x";
 
 const probel = new Probel(host, { port: port });
 

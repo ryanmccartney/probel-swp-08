@@ -231,7 +231,7 @@ module.exports = class Probel {
         }
     };
 
-    waitForCommand = (commandNumbers, timeout = 10000) => {
+    waitForCommand = (commandNumbers, timeout = 8000) => {
         return new Promise((resolve, reject) => {
             // Set up the timeout
             const timer = setTimeout(() => {
@@ -641,12 +641,20 @@ module.exports = class Probel {
                     break;
                 case 3:
                 case 4:
-                    //Handle Tally Information
-                    const newTally = this.parseTallies(dataBytes);
-                    if (newTally) {
-                        response = merge(this.tallies, newTally);
+                    //Handle crosspoint update information
+                    const crosspointData = this.parseTallies(dataBytes);
+                    if (crosspointData) {
+                        response = merge(this.tallies, crosspointData);
                         this.tallies = response;
                     }
+
+                    if (crosspointData) {
+                        if (this.callback.crosspoint) {
+                            this.callback.crosspoint(crosspointData);
+                        }
+                        response = true;
+                    }
+
                     break;
                 case 131:
                     //Handle Tally Information for Single Extended Destination
@@ -681,10 +689,15 @@ module.exports = class Probel {
                     break;
                 case 132:
                     //Handle Crosspoint Response
-                    const crosspointData = this.parseTallyExt(dataBytes);
-                    if (crosspointData) {
+                    const crosspointDataExt = this.parseTallyExt(dataBytes);
+                    if (crosspointDataExt) {
+                        response = merge(this.tallies, crosspointDataExt);
+                        this.tallies = response;
+                    }
+
+                    if (crosspointDataExt) {
                         if (this.callback.crosspoint) {
-                            this.callback.crosspoint(crosspointData);
+                            this.callback.crosspoint(crosspointDataExt);
                         }
                         response = true;
                     }
@@ -715,7 +728,7 @@ module.exports = class Probel {
             buffer = crosspointMessage(levelNumber - 1, srcNumber - 1, destNumber - 1, this.matrix - 1);
         }
         this.send(buffer);
-        return await this.waitForCommand(["ack"]);
+        return await this.waitForCommand(["132", "3", "4", "ack"]);
     };
 
     //Route all the levels from a given source to a given destination (1 to 17)

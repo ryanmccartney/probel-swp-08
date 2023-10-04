@@ -1,7 +1,7 @@
 const Probel = require("./../index");
 
 const port = 8910;
-const host = "172.26.108.80";
+const host = "192.168.x.x";
 const levelTotal = 17;
 
 //Example config object
@@ -24,7 +24,7 @@ const main = async () => {
     console.log("Routed an individual level");
 
     //'Married Route' route all levels of one source to a destination Probel.routeAllLevels(SOURCE_NUMBER, DESTINATION_NUMBER)
-    await probel.routeAllLevels(10, 10);
+    await probel.routeAllLevels(12, 12);
     console.log("Routed all levels of a source and destination");
 
     //1 to 1 routing on matrix (DANGER - don't use on a live matrix)
