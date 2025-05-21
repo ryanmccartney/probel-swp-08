@@ -268,13 +268,10 @@ module.exports = class Probel {
     };
 
     connect = () => {
-        const port = this.port;
-        const host = this.host;
-        const log = this.log;
         this.client = new Net.Socket();
 
         try {
-            this.client.connect({ port: port, host: host }, () => {
+            this.client.connect({ port: this.port, host: this.host }, () => {
                 this.log("Connection established with the Probel SW-P-08 server.");
                 this.connected = true;
                 this.events.emit("connection", true);
@@ -282,18 +279,18 @@ module.exports = class Probel {
 
             this.client.on("data", this.handleData);
 
-            this.client.on("end", function () {
+            this.client.on("end", () => {
                 this.connected = false;
                 this.log("Connection closed");
             });
 
-            this.client.on("error", function () {
+            this.client.on("error", () => {
                 this.connected = false;
-                log(`Unable to connect to matrix at ${host}:${port}`);
+                this.log(`Unable to connect to matrix at ${this.host}:${this.port}`);
             });
         } catch (error) {
             this.events.emit("connection", false);
-            this.log(`Unable to connect to matrix at ${host}:${port}`);
+            this.log(`Unable to connect to matrix at ${this.host}:${this.port}`);
             this.log(error);
         }
     };
